@@ -59,7 +59,9 @@ chmod +x bashq
 
 ### Run from anywhere (optional)
 
-To call `bashq` from any directory without a path:
+The easiest way: start bashq once, then type `/setup` — it installs itself into `/usr/local/bin` (or `~/.local/bin` as fallback) in one step. Type `/setup` again to remove it.
+
+Or manually:
 
 ```bash
 # Install system-wide (requires sudo)
@@ -68,16 +70,7 @@ sudo cp bashq /usr/local/bin/bashq
 # — or — install for your user only (no sudo needed)
 mkdir -p ~/.local/bin
 cp bashq ~/.local/bin/bashq
-# Make sure ~/.local/bin is in your PATH:
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
-```
-
-To undo:
-
-```bash
-sudo rm /usr/local/bin/bashq        # system-wide
-# — or —
-rm ~/.local/bin/bashq               # user-only
 ```
 
 ### 2. Connect your LLM
@@ -177,6 +170,7 @@ Type `/` for autocomplete with descriptions.
 | `/services` | Manage systemd services |
 | `/logs` | Recent system log entries |
 | `/config` | Open settings editor |
+| `/setup` | Install bashq system-wide (or remove — acts as a toggle) |
 | `/activities` | Show command history with timestamps |
 | `/clear` | Clear chat history and start fresh |
 | `/help` | Show keyboard shortcuts and tips |
