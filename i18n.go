@@ -104,9 +104,10 @@ type UIStrings struct {
 	MsgToolRejected   string // Tool-Ablehnung an LLM
 
 	// Chat-Bereich
-	WelcomeMsg          string
-	LabelUser           string // " Du "
-	LabelAssistant      string // " Assistent "
+	WelcomeMsg             string
+	LabelUser              string // " Du "
+	LabelAssistant         string // " Assistent "
+	SessionRestoredFmt string // "📂 Sitzung vom %s fortgesetzt"
 
 	// Aktivitätsprotokoll
 	ActivitiesTitle   string
@@ -293,9 +294,10 @@ var de = UIStrings{
 	MsgExitError:     "⚠ Exit-Fehler: ",
 	MsgToolRejected:  "FEHLER: Der Benutzer hat die Ausführung abgelehnt.",
 
-	WelcomeMsg:          "\n  bashq bereit. Stell mir eine Frage oder tippe / für verfügbare Befehle.\n",
-	LabelUser:           " Du ",
-	LabelAssistant:      " Assistent ",
+	WelcomeMsg:         "\n  bashq bereit. Stell mir eine Frage oder tippe / für verfügbare Befehle.\n",
+	LabelUser:          " Du ",
+	LabelAssistant:     " Assistent ",
+	SessionRestoredFmt: "📂 Sitzung vom %s fortgesetzt",
 
 	ActivitiesTitle:   "📋 Aktivitätsprotokoll",
 	ActivitiesEmpty:   "  (noch keine Einträge in dieser Sitzung)",
@@ -495,9 +497,10 @@ var en = UIStrings{
 	MsgExitError:     "⚠ Exit error: ",
 	MsgToolRejected:  "ERROR: The user rejected the execution.",
 
-	WelcomeMsg:          "\n  bashq ready. Ask me anything or type / for available commands.\n",
-	LabelUser:           " You ",
-	LabelAssistant:      " Assistant ",
+	WelcomeMsg:         "\n  bashq ready. Ask me anything or type / for available commands.\n",
+	LabelUser:          " You ",
+	LabelAssistant:     " Assistant ",
+	SessionRestoredFmt: "📂 Session resumed from %s",
 
 	ActivitiesTitle:   "📋 Activity Log",
 	ActivitiesEmpty:   "  (no entries in this session)",
@@ -697,9 +700,10 @@ var zh = UIStrings{
 	MsgExitError:     "⚠ 退出错误：",
 	MsgToolRejected:  "错误：用户拒绝了此操作。",
 
-	WelcomeMsg:     "\n  bashq 就绪。请提问或键入 / 查看可用命令。\n",
-	LabelUser:      " 你 ",
-	LabelAssistant: " 助手 ",
+	WelcomeMsg:         "\n  bashq 就绪。请提问或键入 / 查看可用命令。\n",
+	LabelUser:          " 你 ",
+	LabelAssistant:     " 助手 ",
+	SessionRestoredFmt: "📂 已从 %s 恢复会话",
 
 	ActivitiesTitle:   "📋 活动日志",
 	ActivitiesEmpty:   "  （本次会话暂无记录）",

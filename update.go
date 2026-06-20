@@ -66,6 +66,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case sessionLoadedMsg:
+		// Bereits gespeicherte Sitzung laden – nur wenn Chat noch leer ist
+		if len(m.messages) == 0 {
+			header := chatMessage{
+				role:    roleSystem,
+				content: fmt.Sprintf(L.SessionRestoredFmt, msg.savedAt),
+			}
+			m.messages = append([]chatMessage{header}, msg.messages...)
+			m.agent.history = msg.history
+			m.updateViewport()
+		}
+		return m, nil
+
 	case healthCheckMsg:
 		if msg.ok {
 			m.addMessage(roleSystem, fmt.Sprintf(L.HealthOkFmt, msg.profileName))
@@ -101,6 +114,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "ctrl+c":
+		saveSession(m.messages, m.agent.history)
 		return m, tea.Quit
 
 	// Shift+Tab: Ausführmodus global umschalten
@@ -684,8 +698,10 @@ func (m model) selectCommand(cmd SlashCommand) (model, tea.Cmd) {
 	case actionClear:
 		m.messages = nil
 		m.agent.Reset()
+		deleteSession()
 		m.updateViewport()
 	case actionExit:
+		saveSession(m.messages, m.agent.history)
 		return m, tea.Quit
 	case actionHelp:
 		m.addMessage(roleSystem, L.HelpText)
@@ -724,6 +740,7 @@ func (m model) handleAgentResponse(resp *AgentResponse) (model, tea.Cmd) {
 		return m.processNextTool()
 	}
 	m.state = stateIdle
+	saveSession(m.messages, m.agent.history)
 	return m, nil
 }
 

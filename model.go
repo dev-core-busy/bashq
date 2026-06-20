@@ -148,14 +148,12 @@ func newModel() model {
 }
 
 func (m model) Init() tea.Cmd {
+	cmds := []tea.Cmd{textinput.Blink, cmdLoadSession()}
 	if m.cfg.activeProfileIdx >= 0 && m.cfg.activeProfileIdx < len(m.cfg.profiles) {
 		p := m.cfg.profiles[m.cfg.activeProfileIdx]
-		return tea.Batch(
-			textinput.Blink,
-			cmdHealthCheck(p.BaseURL, p.Name, m.cfg.profiles, m.cfg.activeProfileIdx),
-		)
+		cmds = append(cmds, cmdHealthCheck(p.BaseURL, p.Name, m.cfg.profiles, m.cfg.activeProfileIdx))
 	}
-	return textinput.Blink
+	return tea.Batch(cmds...)
 }
 
 // --- Hilfs-Methoden ---
