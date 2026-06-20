@@ -5,13 +5,15 @@ import "strings"
 type cmdAction int
 
 const (
-	actionRun        cmdAction = iota // Sofort als Nachricht an Agent senden
-	actionPrompt                      // Eingabefeld mit Prefix füllen
-	actionClear                       // Chat leeren
-	actionExit                        // Beenden
-	actionHelp                        // Hilfe anzeigen
-	actionConfig                      // Konfigurationseditor öffnen
-	actionActivities                  // Aktivitätsprotokoll anzeigen
+	actionRun          cmdAction = iota // Sofort als Nachricht an Agent senden
+	actionPrompt                        // Eingabefeld mit Prefix füllen
+	actionClear                         // Chat leeren
+	actionExit                          // Beenden
+	actionHelp                          // Hilfe anzeigen
+	actionConfig                        // Konfigurationseditor öffnen
+	actionActivities                    // Aktivitätsprotokoll anzeigen
+	actionToggleMode                    // Ask ↔ Auto umschalten
+	actionToggleSession                 // Sitzungs-Speichern umschalten
 )
 
 type SlashCommand struct {
@@ -36,6 +38,8 @@ func getCommands() []SlashCommand {
 		{Name: "/logs", Description: L.CmdLogsDesc, Action: actionRun, Message: L.CmdLogsMsg},
 		{Name: "/optimize", Description: L.CmdOptimizeDesc, Action: actionRun, Message: L.CmdOptimizeMsg},
 		{Name: "/config", Description: L.CmdConfigDesc, Action: actionConfig},
+		{Name: "/toggle", Description: L.CmdToggleDesc, Action: actionToggleMode},
+		{Name: "/session", Description: L.CmdSessionDesc, Action: actionToggleSession},
 		{Name: "/activities", Description: L.CmdActivitiesDesc, Action: actionActivities},
 		{Name: "/help", Description: L.CmdHelpDesc, Action: actionHelp},
 		{Name: "/clear", Description: L.CmdClearDesc, Action: actionClear},

@@ -190,6 +190,8 @@ type UIStrings struct {
 	CmdOptimizeDesc   string
 	CmdOptimizeMsg    string
 	CmdConfigDesc     string
+	CmdToggleDesc     string // "/toggle"
+	CmdSessionDesc    string // "/session"
 	CmdActivitiesDesc string
 	CmdHelpDesc       string
 	CmdClearDesc      string
@@ -374,6 +376,8 @@ TOOL-NUTZUNG:
 	CmdOptimizeDesc:   "System optimieren",
 	CmdOptimizeMsg:    "Was kann ich tun um mein Debian-System zu optimieren und schneller zu machen?",
 	CmdConfigDesc:     "Einstellungen bearbeiten",
+	CmdToggleDesc:     "Ask ↔ Auto Modus umschalten",
+	CmdSessionDesc:    "Sitzungs-Speichern an/aus",
 	CmdActivitiesDesc: "Aktivitätsprotokoll anzeigen",
 	CmdHelpDesc:       "Hilfe anzeigen",
 	CmdClearDesc:      "Chat-Verlauf leeren",
@@ -586,6 +590,8 @@ TOOL USAGE:
 	CmdOptimizeDesc:   "Optimize system",
 	CmdOptimizeMsg:    "What can I do to optimize and speed up my Debian system?",
 	CmdConfigDesc:     "Edit settings",
+	CmdToggleDesc:     "Toggle Ask ↔ Auto mode",
+	CmdSessionDesc:    "Toggle session persistence on/off",
 	CmdActivitiesDesc: "Show activity log",
 	CmdHelpDesc:       "Show help",
 	CmdClearDesc:      "Clear chat history",
@@ -798,6 +804,8 @@ var zh = UIStrings{
 	CmdOptimizeDesc:   "系统优化",
 	CmdOptimizeMsg:    "我能做什么来优化和加速我的 Debian 系统？",
 	CmdConfigDesc:     "编辑设置",
+	CmdToggleDesc:     "切换 Ask ↔ Auto 模式",
+	CmdSessionDesc:    "开启/关闭会话保存",
 	CmdActivitiesDesc: "显示活动日志",
 	CmdHelpDesc:       "显示帮助",
 	CmdClearDesc:      "清除聊天记录",
