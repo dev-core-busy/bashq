@@ -314,7 +314,7 @@ var de = UIStrings{
 	MsgExitError:     "⚠ Exit-Fehler: ",
 	MsgToolRejected:  "FEHLER: Der Benutzer hat die Ausführung abgelehnt.",
 
-	WelcomeMsg:         "\n  bashq bereit. Stell mir eine Frage oder tippe / für verfügbare Befehle.\n",
+	WelcomeMsg:         "\n  bashq bereit – das Q-Kontinuum deines Terminals.\n  Stell mir eine Frage oder tippe / für verfügbare Befehle.\n",
 	LabelUser:          " Du ",
 	LabelAssistant:     " Assistent ",
 	SessionRestoredFmt: "📂 Sitzung vom %s fortgesetzt",
@@ -526,7 +526,7 @@ var en = UIStrings{
 	MsgExitError:     "⚠ Exit error: ",
 	MsgToolRejected:  "ERROR: The user rejected the execution.",
 
-	WelcomeMsg:         "\n  bashq ready. Ask me anything or type / for available commands.\n",
+	WelcomeMsg:         "\n  bashq ready — the Q Continuum of your terminal.\n  Ask me anything or type / for available commands.\n",
 	LabelUser:          " You ",
 	LabelAssistant:     " Assistant ",
 	SessionRestoredFmt: "📂 Session resumed from %s",
@@ -738,7 +738,7 @@ var zh = UIStrings{
 	MsgExitError:     "⚠ 退出错误：",
 	MsgToolRejected:  "错误：用户拒绝了此操作。",
 
-	WelcomeMsg:         "\n  bashq 就绪。请提问或键入 / 查看可用命令。\n",
+	WelcomeMsg:         "\n  bashq 就绪 — 终端的 Q 连续体。\n  请提问或键入 / 查看可用命令。\n",
 	LabelUser:          " 你 ",
 	LabelAssistant:     " 助手 ",
 	SessionRestoredFmt: "📂 已从 %s 恢复会话",
