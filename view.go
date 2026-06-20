@@ -51,17 +51,12 @@ func (m model) renderTitle() string {
 		label = L.TitleApp
 	}
 
-	// Titel und Version getrennt rendern, damit der äußere Style die Version-Farbe
-	// nicht überschreibt. Padding manuell berechnen.
-	namePart := titleBarStyle.UnsetWidth().Render("  " + label + " ")
-	verPart := titleVersionStyle.Render(currentVersion)
-	used := lipgloss.Width(namePart) + lipgloss.Width(verPart) + badgeWidth
-	padWidth := m.width - used
-	if padWidth < 0 {
-		padWidth = 0
+	titleWidth := m.width - badgeWidth
+	if titleWidth < 0 {
+		titleWidth = 0
 	}
-	padPart := titleBarStyle.UnsetWidth().Render(strings.Repeat(" ", padWidth))
-	return namePart + verPart + padPart + modeBadge + sessBadge
+	titleText := "  " + label + "  " + currentVersion
+	return titleBarStyle.Width(titleWidth).Render(titleText) + modeBadge + sessBadge
 }
 
 // --- Unterer Bereich ---
