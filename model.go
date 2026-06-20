@@ -338,3 +338,29 @@ func minInt(a, b int) int {
 	}
 	return b
 }
+
+// configFieldLine berechnet die 0-basierte Zeilennummer des configSel-Felds i
+// im gerendereten Config-Inhalt. Wird für Viewport-Auto-Scroll genutzt.
+func (m model) configFieldLine(i int) int {
+	nP := len(m.cfg.profiles)
+	hasActive := m.cfg.activeProfileIdx >= 0 && m.cfg.activeProfileIdx < nP
+	base := 7 + nP
+	if hasActive {
+		base += 2
+	}
+	switch {
+	case i <= 2:
+		return base + i
+	case i == 3:
+		return base + 6
+	case i == 4:
+		return base + 8
+	case i >= 5 && i <= 13:
+		return base + 12 + (i - 5)
+	case i == 14:
+		return base + 24
+	case i == 15:
+		return base + 28
+	}
+	return 0
+}

@@ -310,6 +310,7 @@ func (m model) handleConfigKey(msg tea.KeyMsg) (model, tea.Cmd) {
 			m.profileSel = n
 		}
 		m.viewport.SetContent(m.renderConfigContent())
+		m = m.scrollToConfigField()
 
 	case "up":
 		if m.cfgSection == 0 {
@@ -324,6 +325,7 @@ func (m model) handleConfigKey(msg tea.KeyMsg) (model, tea.Cmd) {
 			}
 		}
 		m.viewport.SetContent(m.renderConfigContent())
+		m = m.scrollToConfigField()
 
 	case "down":
 		if m.cfgSection == 0 {
@@ -335,6 +337,7 @@ func (m model) handleConfigKey(msg tea.KeyMsg) (model, tea.Cmd) {
 			m.configSel = (m.configSel + 1) % configFieldCount
 		}
 		m.viewport.SetContent(m.renderConfigContent())
+		m = m.scrollToConfigField()
 
 	case "enter":
 		if m.cfgSection == 0 {
@@ -832,6 +835,21 @@ func cmdSendMessage(agent *Agent, msg string) tea.Cmd {
 		}
 		return agentResponseMsg{resp}
 	}
+}
+
+// scrollToConfigField scrollt den Viewport so, dass das aktuell ausgewählte
+// Einstellungsfeld (cfgSection==1) sichtbar ist.
+func (m model) scrollToConfigField() model {
+	if m.cfgSection != 1 {
+		return m
+	}
+	line := m.configFieldLine(m.configSel)
+	target := line - m.viewport.Height/3
+	if target < 0 {
+		target = 0
+	}
+	m.viewport.SetYOffset(target)
+	return m
 }
 
 func cmdSendToolResult(agent *Agent, callID, result string) tea.Cmd {
