@@ -101,9 +101,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case updateDoneMsg:
 		if msg.err != nil {
 			m.addMessage(roleError, fmt.Sprintf(L.MsgUpdateError, msg.err.Error()))
-		} else {
-			m.addMessage(roleSystem, fmt.Sprintf(L.MsgUpdateDone, msg.version))
+			m.updateViewport()
+			return m, nil
 		}
+		if m.cfg.autoUpdate == "auto" {
+			// Auto-Modus: Prozess durch neue Binary ersetzen
+			restartAfterUpdate = true
+			return m, tea.Quit
+		}
+		m.addMessage(roleSystem, fmt.Sprintf(L.MsgUpdateDone, msg.version))
 		m.updateViewport()
 		return m, nil
 

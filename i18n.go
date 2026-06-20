@@ -320,7 +320,7 @@ var de = UIStrings{
 
 	MsgUpdateAvailable:   "🔄 Neue Version %s verfügbar. Alt+U installieren · Esc ignorieren",
 	MsgUpdateDownloading: "⬇ Lade bashq %s herunter…",
-	MsgUpdateDone:        "✓ bashq %s installiert — bitte neu starten (Ctrl+C, dann bashq)",
+	MsgUpdateDone:        "✓ bashq %s installiert — bitte neu starten",
 	MsgUpdateUpToDate:    "✓ bashq ist aktuell (%s)",
 	MsgUpdateError:       "⚠ Update fehlgeschlagen: %s",
 	MsgModeAuto:      "⚡ Modus: Auto-Ausführen (Befehle werden ohne Rückfrage ausgeführt)",
@@ -544,7 +544,7 @@ var en = UIStrings{
 
 	MsgUpdateAvailable:   "🔄 New version %s available. Alt+U to install · Esc to skip",
 	MsgUpdateDownloading: "⬇ Downloading bashq %s…",
-	MsgUpdateDone:        "✓ bashq %s installed — please restart (Ctrl+C, then bashq)",
+	MsgUpdateDone:        "✓ bashq %s installed — please restart",
 	MsgUpdateUpToDate:    "✓ bashq is up to date (%s)",
 	MsgUpdateError:       "⚠ Update failed: %s",
 	MsgModeAuto:      "⚡ Mode: Auto-execute (commands run without confirmation)",
@@ -768,7 +768,7 @@ var zh = UIStrings{
 
 	MsgUpdateAvailable:   "🔄 新版本 %s 可用。Alt+U 安装 · Esc 跳过",
 	MsgUpdateDownloading: "⬇ 正在下载 bashq %s…",
-	MsgUpdateDone:        "✓ bashq %s 已安装 — 请重启（Ctrl+C，然后 bashq）",
+	MsgUpdateDone:        "✓ bashq %s 已安装 — 请重启",
 	MsgUpdateUpToDate:    "✓ bashq 已是最新版本（%s）",
 	MsgUpdateError:       "⚠ 更新失败：%s",
 	MsgModeAuto:      "⚡ 模式：自动执行（命令无需确认直接运行）",
