@@ -46,31 +46,28 @@ No cloud. No account. No data leaving your machine. Just you, your terminal, and
 
 ---
 
-## Get Started in 30 Seconds
-
-### 1. Download
-
-Grab the latest binary from the **[Releases](../../releases)** page:
+## Install in One Line
 
 ```bash
-chmod +x bashq
-./bashq
+curl -fsSL https://github.com/dev-core-busy/bashq/releases/latest/download/bashq -o bashq && chmod +x bashq && sudo mv bashq /usr/local/bin/bashq
 ```
 
-### Run from anywhere (optional)
+That's it. Run `bashq` from anywhere.
 
-The easiest way: start bashq once, then type `/setup` — it installs itself into `/usr/local/bin` (or `~/.local/bin` as fallback) in one step. Type `/setup` again to remove it.
+> **No sudo?** Install to your home directory instead:
+> ```bash
+> curl -fsSL https://github.com/dev-core-busy/bashq/releases/latest/download/bashq -o ~/.local/bin/bashq && chmod +x ~/.local/bin/bashq
+> ```
+> Make sure `~/.local/bin` is in your `PATH` (`echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc`).
 
-Or manually:
+> **Already running bashq?** Type `/setup` inside the app — it installs or removes itself with one keypress. Auto-update is built in and can be toggled in `/config`.
+
+### Manual download
+
+Grab the binary from the **[Releases](../../releases)** page and run it directly:
 
 ```bash
-# Install system-wide (requires sudo)
-sudo cp bashq /usr/local/bin/bashq
-
-# — or — install for your user only (no sudo needed)
-mkdir -p ~/.local/bin
-cp bashq ~/.local/bin/bashq
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
+chmod +x bashq && ./bashq
 ```
 
 ### 2. Connect your LLM
