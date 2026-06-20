@@ -12,6 +12,8 @@ explains them, confirms, and runs them — all locally, all instantly.
 [![Platform](https://img.shields.io/badge/Platform-Linux-FCC624?logo=linux&logoColor=black)](.)
 [![Releases](https://img.shields.io/github/v/release/dev-core-busy/bashq?color=4fc3f7)](../../releases)
 
+**Sister project:** [winq](https://github.com/dev-core-busy/winq) — the Windows version
+
 </div>
 
 ---
@@ -219,6 +221,13 @@ All files are human-readable JSON / plain text. Delete any of them to reset that
 **bash** + **q** — the Q Continuum of shell interfaces.
 
 In Star Trek, Q is an omnipotent entity who knows everything, can do anything, and never needs to look anything up. That's the energy bashq brings to your command line: ask it anything about your system, and it handles the rest.
+
+---
+
+## Sister Project
+
+**[winq](https://github.com/dev-core-busy/winq)** — the Windows sibling.  
+Same concept, same architecture, same local-LLM philosophy — built for PowerShell and Windows instead of bash and Linux.
 
 ---
 
