@@ -12,8 +12,7 @@ const (
 	actionHelp                          // Hilfe anzeigen
 	actionConfig                        // Konfigurationseditor öffnen
 	actionActivities                    // Aktivitätsprotokoll anzeigen
-	actionToggleMode                    // Ask ↔ Auto umschalten
-	actionToggleSession                 // Sitzungs-Speichern umschalten
+	actionSelfInstall                   // bashq system-weit installieren / deinstallieren
 )
 
 type SlashCommand struct {
@@ -38,8 +37,7 @@ func getCommands() []SlashCommand {
 		{Name: "/logs", Description: L.CmdLogsDesc, Action: actionRun, Message: L.CmdLogsMsg},
 		{Name: "/optimize", Description: L.CmdOptimizeDesc, Action: actionRun, Message: L.CmdOptimizeMsg},
 		{Name: "/config", Description: L.CmdConfigDesc, Action: actionConfig},
-		{Name: "/toggle", Description: L.CmdToggleDesc, Action: actionToggleMode},
-		{Name: "/session", Description: L.CmdSessionDesc, Action: actionToggleSession},
+		{Name: "/setup", Description: L.CmdSetupDesc, Action: actionSelfInstall},
 		{Name: "/activities", Description: L.CmdActivitiesDesc, Action: actionActivities},
 		{Name: "/help", Description: L.CmdHelpDesc, Action: actionHelp},
 		{Name: "/clear", Description: L.CmdClearDesc, Action: actionClear},

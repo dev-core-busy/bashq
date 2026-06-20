@@ -753,22 +753,12 @@ func (m model) selectCommand(cmd SlashCommand) (model, tea.Cmd) {
 	case actionActivities:
 		m.addMessage(roleSystem, m.formatActivities())
 		m.updateViewport()
-	case actionToggleMode:
-		m.cfg.autoAllow = !m.cfg.autoAllow
-		saveConfig(m.cfg)
-		if m.cfg.autoAllow {
-			m.addMessage(roleSystem, L.MsgModeAuto)
+	case actionSelfInstall:
+		msg, isErr := selfInstallToggle()
+		if isErr {
+			m.addMessage(roleError, msg)
 		} else {
-			m.addMessage(roleSystem, L.MsgModeAsk)
-		}
-		m.updateViewport()
-	case actionToggleSession:
-		m.cfg.saveSessions = !m.cfg.saveSessions
-		saveConfig(m.cfg)
-		if m.cfg.saveSessions {
-			m.addMessage(roleSystem, L.MsgSessionOn)
-		} else {
-			m.addMessage(roleSystem, L.MsgSessionOff)
+			m.addMessage(roleSystem, msg)
 		}
 		m.updateViewport()
 	}
