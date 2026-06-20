@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	defaultBaseURL = "http://191.100.130.61:9081/v1"
-	defaultModel   = "Qwen/Qwen3.6-35B-A3B-FP8"
+	defaultBaseURL = "http://localhost:11434/v1"
+	defaultModel   = "llama3"
 )
 
 // systemPrompt wird dynamisch aus L.SystemPrompt gelesen (siehe callLLM).
