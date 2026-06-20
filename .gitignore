@@ -1,0 +1,18 @@
+# Compiled binaries
+bashq
+linux_cmd_agent
+
+# Personal files
+todo.txt
+session.sh
+
+# Editor / OS
+.DS_Store
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Go
+*.test
