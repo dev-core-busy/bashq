@@ -134,10 +134,11 @@ func (m model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	// F1–F9: Shortcuts auslösen (nur in stateIdle)
+	// F1–F9 oder Alt+1–9: Shortcuts auslösen (nur in stateIdle)
 	if m.state == stateIdle {
 		for i := 1; i <= 9; i++ {
-			if msg.String() == fmt.Sprintf("f%d", i) {
+			key := msg.String()
+			if key == fmt.Sprintf("f%d", i) || key == fmt.Sprintf("alt+%d", i) {
 				return m.triggerShortcut(i - 1)
 			}
 		}
@@ -351,10 +352,16 @@ func (m model) handleConfigEditKey(msg tea.KeyMsg) (model, tea.Cmd) {
 	case "enter":
 		value := strings.TrimSpace(m.input.Value())
 		switch {
-		case m.configSel == 0 && value != "":
+		case m.configSel == 0:
+			if value == "" {
+				value = defaultBaseURL
+			}
 			m.cfg.baseURL = value
 			m.agent.baseURL = value
-		case m.configSel == 1 && value != "":
+		case m.configSel == 1:
+			if value == "" {
+				value = defaultModel
+			}
 			m.cfg.model = value
 			m.agent.model = value
 		case m.configSel == 2: // API-Key darf leer sein

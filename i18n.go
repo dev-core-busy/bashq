@@ -77,12 +77,13 @@ type UIStrings struct {
 	SectionLanguage   string
 
 	// Konfigurations-Feldbezeichnungen
-	FieldEndpoint string
-	FieldModel    string
-	FieldAPIKey   string
-	FieldMode     string
-	FieldPrompt   string
-	FieldLang     string
+	FieldActiveProfile string // "Aktives Profil"
+	FieldEndpoint      string
+	FieldModel         string
+	FieldAPIKey        string
+	FieldMode          string
+	FieldPrompt        string
+	FieldLang          string
 
 	// Konfigurationswerte
 	FieldAPIKeyEmpty   string // "(leer – für lokale LLMs)"
@@ -203,7 +204,7 @@ var de = UIStrings{
 	HintScrollLabel:   "scrollen",
 	HintModeKey:       "Shift+Tab",
 	HintModeLabel:     "Modus",
-	HintShortcutKeys:  "F1–F9",
+	HintShortcutKeys:  "F1–F9/Alt+1–9",
 	HintShortcutLabel: "Kürzel",
 	ACHint:            "  ↑↓/Tab: wählen · Enter: bestätigen · Esc: schließen",
 	ACMore:            "… %d weitere",
@@ -270,12 +271,13 @@ var de = UIStrings{
 	HealthSuggestFmt: "  → Nächste Option: '%s'  (in /config wechseln)",
 	HealthNoFallback: "  → Kein weiteres erreichbares Profil. Bitte /config prüfen.",
 
-	FieldEndpoint: "LLM-Endpunkt",
-	FieldModel:    "Modell",
-	FieldAPIKey:   "API-Key",
-	FieldMode:     "Ausführmodus",
-	FieldPrompt:   "System-Prompt",
-	FieldLang:     "Sprache",
+	FieldActiveProfile: "Aktives Profil",
+	FieldEndpoint:      "LLM-Endpunkt",
+	FieldModel:         "Modell",
+	FieldAPIKey:        "API-Key",
+	FieldMode:          "Ausführmodus",
+	FieldPrompt:        "System-Prompt",
+	FieldLang:          "Sprache",
 
 	FieldAPIKeyEmpty:   "(leer – für lokale LLMs)",
 	FieldPromptEmpty:   "(leer – Enter zum Bearbeiten)",
@@ -406,7 +408,7 @@ var en = UIStrings{
 	HintScrollLabel:   "scroll",
 	HintModeKey:       "Shift+Tab",
 	HintModeLabel:     "mode",
-	HintShortcutKeys:  "F1–F9",
+	HintShortcutKeys:  "F1–F9/Alt+1–9",
 	HintShortcutLabel: "shortcuts",
 	ACHint:            "  ↑↓/Tab: select · Enter: confirm · Esc: close",
 	ACMore:            "… %d more",
@@ -473,12 +475,13 @@ var en = UIStrings{
 	HealthSuggestFmt: "  → Next option: '%s'  (switch in /config)",
 	HealthNoFallback: "  → No other reachable profile available. Check /config.",
 
-	FieldEndpoint: "LLM Endpoint",
-	FieldModel:    "Model",
-	FieldAPIKey:   "API Key",
-	FieldMode:     "Exec mode",
-	FieldPrompt:   "System prompt",
-	FieldLang:     "Language",
+	FieldActiveProfile: "Active profile",
+	FieldEndpoint:      "LLM Endpoint",
+	FieldModel:         "Model",
+	FieldAPIKey:        "API Key",
+	FieldMode:          "Exec mode",
+	FieldPrompt:        "System prompt",
+	FieldLang:          "Language",
 
 	FieldAPIKeyEmpty:   "(empty – for local LLMs)",
 	FieldPromptEmpty:   "(empty – press Enter to edit)",
@@ -609,7 +612,7 @@ var zh = UIStrings{
 	HintScrollLabel:   "滚动",
 	HintModeKey:       "Shift+Tab",
 	HintModeLabel:     "模式",
-	HintShortcutKeys:  "F1–F9",
+	HintShortcutKeys:  "F1–F9/Alt+1–9",
 	HintShortcutLabel: "快捷键",
 	ACHint:            "  ↑↓/Tab: 选择 · Enter: 确认 · Esc: 关闭",
 	ACMore:            "… 还有 %d 个",
@@ -676,12 +679,13 @@ var zh = UIStrings{
 	HealthSuggestFmt: "  → 下一个选项：'%s'  （在 /config 中切换）",
 	HealthNoFallback: "  → 没有其他可访问的配置文件。请检查 /config。",
 
-	FieldEndpoint: "LLM 端点",
-	FieldModel:    "模型",
-	FieldAPIKey:   "API 密钥",
-	FieldMode:     "执行模式",
-	FieldPrompt:   "系统提示词",
-	FieldLang:     "语言",
+	FieldActiveProfile: "当前配置文件",
+	FieldEndpoint:      "LLM 端点",
+	FieldModel:         "模型",
+	FieldAPIKey:        "API 密钥",
+	FieldMode:          "执行模式",
+	FieldPrompt:        "系统提示词",
+	FieldLang:          "语言",
 
 	FieldAPIKeyEmpty:   "（空 – 本地 LLM 不需要）",
 	FieldPromptEmpty:   "（空 – 按 Enter 编辑）",

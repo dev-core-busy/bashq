@@ -302,6 +302,15 @@ func (m model) renderConfigContent() string {
 
 	// VERBINDUNG / CONNECTION
 	sb.WriteString("  " + sectionStyle.Render(L.SectionConnection) + "\n\n")
+	if m.cfg.activeProfileIdx >= 0 && m.cfg.activeProfileIdx < len(m.cfg.profiles) {
+		p := m.cfg.profiles[m.cfg.activeProfileIdx]
+		profLine := configLabelStyle.Render(fmt.Sprintf("%-14s", L.FieldActiveProfile)) +
+			"  " + configValueSelectedStyle.Render(p.Name)
+		if p.Preferred {
+			profLine += "  " + dimStyle.Render(L.ProfilePreferred)
+		}
+		sb.WriteString("  " + profLine + "\n\n")
+	}
 	sb.WriteString(m.renderConfigField(0, L.FieldEndpoint, m.cfg.baseURL, false))
 	sb.WriteString(m.renderConfigField(1, L.FieldModel, m.cfg.model, false))
 
