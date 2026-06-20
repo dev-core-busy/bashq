@@ -8,9 +8,11 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// restartAfterUpdate wird gesetzt wenn auto-update eine neue Binary installiert hat.
-// main() startet den Prozess dann per syscall.Exec neu.
+// restartAfterUpdate + restartExecPath: gesetzt nach erfolgreichem auto-update.
+// Der Pfad wird VOR dem Rename gesichert, damit /proc/self/exe nicht auf einen
+// gelöschten Inode zeigt wenn syscall.Exec aufgerufen wird.
 var restartAfterUpdate bool
+var restartExecPath string
 
 func main() {
 	p := tea.NewProgram(
@@ -22,12 +24,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	if restartAfterUpdate {
-		exe, err := os.Executable()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "Neustart fehlgeschlagen:", err)
+	if restartAfterUpdate && restartExecPath != "" {
+		if err := syscall.Exec(restartExecPath, os.Args, os.Environ()); err != nil {
+			fmt.Fprintln(os.Stderr, "bashq Neustart fehlgeschlagen:", err)
+			fmt.Fprintln(os.Stderr, "Bitte manuell neu starten:", restartExecPath)
 			os.Exit(1)
 		}
-		syscall.Exec(exe, os.Args, os.Environ())
 	}
 }

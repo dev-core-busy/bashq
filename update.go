@@ -105,8 +105,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if m.cfg.autoUpdate == "auto" {
-			// Auto-Modus: Prozess durch neue Binary ersetzen
 			restartAfterUpdate = true
+			restartExecPath = msg.execPath
 			return m, tea.Quit
 		}
 		m.addMessage(roleSystem, fmt.Sprintf(L.MsgUpdateDone, msg.version))

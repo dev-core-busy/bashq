@@ -26,8 +26,9 @@ type updateCheckMsg struct {
 }
 
 type updateDoneMsg struct {
-	version string
-	err     error
+	version  string
+	execPath string // Pfad der Binary VOR dem Rename, für syscall.Exec
+	err      error
 }
 
 // scheduleUpdateCheckMsg feuert nach 30 Minuten Wartezeit.
@@ -139,6 +140,6 @@ func cmdDownloadUpdate(info updateInfo) tea.Cmd {
 		}
 		os.Remove(oldFile)
 
-		return updateDoneMsg{version: info.version}
+		return updateDoneMsg{version: info.version, execPath: exe}
 	}
 }
