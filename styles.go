@@ -29,7 +29,7 @@ var (
 
 	titleVersionStyle = lipgloss.NewStyle().
 				Background(colorTitle).
-				Foreground(lipgloss.Color("#4a7fa8")).
+				Foreground(colorAccent).
 				Bold(false)
 
 	// Trennlinie
