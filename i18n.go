@@ -201,6 +201,7 @@ type UIStrings struct {
 	CmdOptimizeMsg    string
 	CmdConfigDesc     string
 	CmdSetupDesc      string // "/setup"
+	CmdColorsDesc     string // "/colors"
 	CmdActivitiesDesc string
 	CmdHelpDesc       string
 	CmdClearDesc      string
@@ -396,6 +397,7 @@ TOOL-NUTZUNG:
 	CmdOptimizeMsg:    "Was kann ich tun um mein Debian-System zu optimieren und schneller zu machen?",
 	CmdConfigDesc:     "Einstellungen bearbeiten",
 	CmdSetupDesc:      "bashq systemweit installieren / deinstallieren",
+	CmdColorsDesc:     "Terminal-Farben in ~/.bashrc einrichten",
 	CmdActivitiesDesc: "Aktivitätsprotokoll anzeigen",
 	CmdHelpDesc:       "Hilfe anzeigen",
 	CmdClearDesc:      "Chat-Verlauf leeren",
@@ -620,6 +622,7 @@ TOOL USAGE:
 	CmdOptimizeMsg:    "What can I do to optimize and speed up my Debian system?",
 	CmdConfigDesc:     "Edit settings",
 	CmdSetupDesc:      "Install / uninstall bashq system-wide",
+	CmdColorsDesc:     "Set up terminal colors in ~/.bashrc",
 	CmdActivitiesDesc: "Show activity log",
 	CmdHelpDesc:       "Show help",
 	CmdClearDesc:      "Clear chat history",
@@ -844,6 +847,7 @@ var zh = UIStrings{
 	CmdOptimizeMsg:    "我能做什么来优化和加速我的 Debian 系统？",
 	CmdConfigDesc:     "编辑设置",
 	CmdSetupDesc:      "系统级安装 / 卸载 bashq",
+	CmdColorsDesc:     "配置终端颜色到 ~/.bashrc",
 	CmdActivitiesDesc: "显示活动日志",
 	CmdHelpDesc:       "显示帮助",
 	CmdClearDesc:      "清除聊天记录",

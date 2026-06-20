@@ -13,6 +13,7 @@ const (
 	actionConfig                        // Konfigurationseditor öffnen
 	actionActivities                    // Aktivitätsprotokoll anzeigen
 	actionSelfInstall                   // bashq system-weit installieren / deinstallieren
+	actionColors                        // Terminal-Farben in ~/.bashrc einrichten
 )
 
 type SlashCommand struct {
@@ -38,6 +39,7 @@ func getCommands() []SlashCommand {
 		{Name: "/optimize", Description: L.CmdOptimizeDesc, Action: actionRun, Message: L.CmdOptimizeMsg},
 		{Name: "/config", Description: L.CmdConfigDesc, Action: actionConfig},
 		{Name: "/setup", Description: L.CmdSetupDesc, Action: actionSelfInstall},
+		{Name: "/colors", Description: L.CmdColorsDesc, Action: actionColors},
 		{Name: "/activities", Description: L.CmdActivitiesDesc, Action: actionActivities},
 		{Name: "/help", Description: L.CmdHelpDesc, Action: actionHelp},
 		{Name: "/clear", Description: L.CmdClearDesc, Action: actionClear},

@@ -829,6 +829,14 @@ func (m model) selectCommand(cmd SlashCommand) (model, tea.Cmd) {
 			m.addMessage(roleSystem, msg)
 		}
 		m.updateViewport()
+	case actionColors:
+		msg, isErr := setupColors()
+		if isErr {
+			m.addMessage(roleError, msg)
+		} else {
+			m.addMessage(roleSystem, msg)
+		}
+		m.updateViewport()
 	}
 	return m, nil
 }
