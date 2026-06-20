@@ -27,6 +27,11 @@ var (
 			Bold(true).
 			Padding(0, 1)
 
+	titleVersionStyle = lipgloss.NewStyle().
+				Background(colorTitle).
+				Foreground(lipgloss.Color("#4a7fa8")).
+				Bold(false)
+
 	// Trennlinie
 	dividerStyle = lipgloss.NewStyle().
 			Foreground(colorDivider)

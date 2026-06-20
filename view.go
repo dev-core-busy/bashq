@@ -55,7 +55,8 @@ func (m model) renderTitle() string {
 	if titleWidth < 0 {
 		titleWidth = 0
 	}
-	return titleBarStyle.Width(titleWidth).Render("  " + label) + modeBadge + sessBadge
+	titleText := "  " + label + " " + titleVersionStyle.Render(currentVersion)
+	return titleBarStyle.Width(titleWidth).Render(titleText) + modeBadge + sessBadge
 }
 
 // --- Unterer Bereich ---
