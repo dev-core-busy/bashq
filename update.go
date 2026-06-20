@@ -744,11 +744,12 @@ func (m model) selectCommand(cmd SlashCommand) (model, tea.Cmd) {
 		m.updateViewport()
 	case actionConfig:
 		m.state = stateConfig
+		m.cfgSection = 1
 		m.configSel = 0
 		m.configEditing = false
 		m.recalcViewport()
 		m.viewport.SetContent(m.renderConfigContent())
-		m.viewport.GotoTop()
+		m = m.scrollToConfigField()
 	case actionActivities:
 		m.addMessage(roleSystem, m.formatActivities())
 		m.updateViewport()

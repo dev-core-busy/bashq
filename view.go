@@ -83,26 +83,32 @@ func (m model) renderIdleBottom() string {
 	inputLine := m.input.View()
 
 	if m.showAC && len(m.filtered) > 0 {
-		var lines []string
-		visible := m.filtered
-		more := false
-		if len(visible) > maxACVisible {
-			visible = visible[:maxACVisible]
-			more = true
+		// Gleitendes Fenster: acSel ist immer in der sichtbaren Auswahl
+		start := 0
+		if m.acSel >= maxACVisible {
+			start = m.acSel - maxACVisible + 1
 		}
+		end := start + maxACVisible
+		if end > len(m.filtered) {
+			end = len(m.filtered)
+		}
+		visible := m.filtered[start:end]
+		more := len(m.filtered) > end
+
+		var lines []string
 		for i, cmd := range visible {
 			entry := fmt.Sprintf("%-14s", cmd.Name)
 			if cmd.Description != "" {
 				entry += "  " + acDescStyle.Render(cmd.Description)
 			}
-			if i == m.acSel {
+			if start+i == m.acSel {
 				lines = append(lines, acItemSelectedStyle.Render(" ▶ "+entry))
 			} else {
 				lines = append(lines, acItemStyle.Render("   "+entry))
 			}
 		}
 		if more {
-			lines = append(lines, dimStyle.Render(fmt.Sprintf("   "+L.ACMore, len(m.filtered)-maxACVisible)))
+			lines = append(lines, dimStyle.Render(fmt.Sprintf("   "+L.ACMore, len(m.filtered)-end)))
 		}
 		acBlock := strings.Join(lines, "\n")
 		return acBlock + "\n" + inputLine + "\n" + hintStyle.Render(L.ACHint)
