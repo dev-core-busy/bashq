@@ -24,6 +24,7 @@ type savedConfig struct {
 	Lang          string         `json:"lang"`
 	Profiles      []savedProfile `json:"profiles,omitempty"`
 	ActiveProfile int            `json:"active_profile"`
+	SaveSessions  *bool          `json:"save_sessions,omitempty"` // nil = default true
 }
 
 func configFilePath() (string, error) {
@@ -39,6 +40,7 @@ func loadConfig() appConfig {
 		baseURL:          defaultBaseURL,
 		model:            defaultModel,
 		autoAllow:        false,
+		saveSessions:     true,
 		lang:             detectSystemLang(),
 		activeProfileIdx: -1,
 	}
@@ -67,6 +69,9 @@ func loadConfig() appConfig {
 	cfg.autoAllow = saved.AutoAllow
 	cfg.customPrompt = saved.CustomPrompt
 	cfg.shortcuts = saved.Shortcuts
+	if saved.SaveSessions != nil {
+		cfg.saveSessions = *saved.SaveSessions
+	}
 	if saved.Lang != "" {
 		cfg.lang = saved.Lang
 	}
@@ -119,6 +124,7 @@ func saveConfig(cfg appConfig) error {
 	if activeIdx < 0 {
 		activeIdx = 0
 	}
+	saveSessions := cfg.saveSessions
 	data, err := json.MarshalIndent(savedConfig{
 		BaseURL:       cfg.baseURL,
 		Model:         cfg.model,
@@ -129,6 +135,7 @@ func saveConfig(cfg appConfig) error {
 		Lang:          cfg.lang,
 		Profiles:      savedProfiles,
 		ActiveProfile: activeIdx,
+		SaveSessions:  &saveSessions,
 	}, "", "  ")
 	if err != nil {
 		return err

@@ -29,13 +29,19 @@ func (m model) View() string {
 // --- Titelzeile ---
 
 func (m model) renderTitle() string {
-	var badgeStyled string
+	var modeBadge string
 	if m.cfg.autoAllow {
-		badgeStyled = autoModeBadgeStyle.Render(L.BadgeAuto)
+		modeBadge = autoModeBadgeStyle.Render(L.BadgeAuto)
 	} else {
-		badgeStyled = askModeBadgeStyle.Render(L.BadgeAsk)
+		modeBadge = askModeBadgeStyle.Render(L.BadgeAsk)
 	}
-	badgeWidth := lipgloss.Width(badgeStyled)
+	var sessBadge string
+	if m.cfg.saveSessions {
+		sessBadge = sessionBadgeOnStyle.Render(L.BadgeSessionOn)
+	} else {
+		sessBadge = sessionBadgeOffStyle.Render(L.BadgeSessionOff)
+	}
+	badgeWidth := lipgloss.Width(modeBadge) + lipgloss.Width(sessBadge)
 
 	var label string
 	switch m.state {
@@ -49,7 +55,7 @@ func (m model) renderTitle() string {
 	if titleWidth < 0 {
 		titleWidth = 0
 	}
-	return titleBarStyle.Width(titleWidth).Render("  " + label) + badgeStyled
+	return titleBarStyle.Width(titleWidth).Render("  " + label) + modeBadge + sessBadge
 }
 
 // --- Unterer Bereich ---
@@ -272,13 +278,6 @@ func (m model) renderConfigContent() string {
 			cursor = configLabelSelectedStyle.Render("▶ ")
 			lblStyle = configLabelSelectedStyle
 		}
-		markers := ""
-		if m.cfg.activeProfileIdx == i {
-			markers += " " + L.ProfileActive
-		}
-		if p.Preferred {
-			markers += " " + L.ProfilePreferred
-		}
 		urlShort := p.BaseURL
 		maxU := m.width - 36
 		if maxU < 10 {
@@ -287,7 +286,13 @@ func (m model) renderConfigContent() string {
 		if len(urlShort) > maxU {
 			urlShort = urlShort[:maxU] + "…"
 		}
-		line := fmt.Sprintf("%-18s  %s%s", p.Name, dimStyle.Render(urlShort), dimStyle.Render(markers))
+		line := fmt.Sprintf("%-18s  %s", p.Name, dimStyle.Render(urlShort))
+		if m.cfg.activeProfileIdx == i {
+			line += dimStyle.Render(" "+L.ProfileActive)
+		}
+		if p.Preferred {
+			line += " " + preferredStyle.Render(L.ProfilePreferred)
+		}
 		sb.WriteString(cursor + lblStyle.Render(line) + "\n")
 	}
 	// "Add"-Button
@@ -372,6 +377,15 @@ func (m model) renderConfigContent() string {
 		langDisplay = "中文"
 	}
 	sb.WriteString(m.renderConfigField(14, L.FieldLang, langDisplay+" "+dimStyle.Render(L.ModeToggleHint), true))
+	sb.WriteString("\n")
+
+	// SITZUNGEN / SESSIONS
+	sb.WriteString("  " + sectionStyle.Render(L.SectionSession) + "\n\n")
+	sessVal := configAskStyle.Render(L.ModeSessionOff)
+	if m.cfg.saveSessions {
+		sessVal = configAutoStyle.Render(L.ModeSessionOn)
+	}
+	sb.WriteString(m.renderConfigField(15, L.FieldSession, sessVal+" "+dimStyle.Render(L.ModeToggleHint), true))
 	sb.WriteString("\n")
 
 	return sb.String()

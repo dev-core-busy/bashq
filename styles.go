@@ -116,6 +116,23 @@ var (
 				Bold(true).
 				Padding(0, 1)
 
+	sessionBadgeOnStyle = lipgloss.NewStyle().
+				Background(lipgloss.Color("#1565c0")).
+				Foreground(lipgloss.Color("#e3f2fd")).
+				Bold(true).
+				Padding(0, 1)
+
+	sessionBadgeOffStyle = lipgloss.NewStyle().
+				Background(lipgloss.Color("#37474f")).
+				Foreground(lipgloss.Color("#b0bec5")).
+				Bold(true).
+				Padding(0, 1)
+
+	// Bevorzugtes Profil (★ in Profilliste)
+	preferredStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#ffd54f")).
+			Bold(true)
+
 	dimTitleStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#78909c"))
 

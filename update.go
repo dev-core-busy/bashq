@@ -12,8 +12,8 @@ import (
 )
 
 // configFieldCount: 0=baseURL, 1=model, 2=apiKey, 3=autoAllow, 4=customPrompt,
-//                   5-13=F1-F9, 14=lang
-const configFieldCount = 15
+// 5-13=F1-F9, 14=lang, 15=saveSessions
+const configFieldCount = 16
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -114,7 +114,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "ctrl+c":
-		saveSession(m.messages, m.agent.history)
+		if m.cfg.saveSessions {
+			saveSession(m.messages, m.agent.history)
+		}
 		return m, tea.Quit
 
 	// Shift+Tab: Ausführmodus global umschalten
@@ -130,6 +132,24 @@ func (m model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.addMessage(roleSystem, L.MsgModeAsk)
 			}
 			m.updateViewport()
+		}
+		return m, nil
+
+	// Alt+S: Sitzungs-Speichern global umschalten
+	case "alt+s":
+		if m.state != stateExecuting {
+			m.cfg.saveSessions = !m.cfg.saveSessions
+			saveConfig(m.cfg)
+			if m.state == stateConfig {
+				m.viewport.SetContent(m.renderConfigContent())
+			} else if m.state != stateEditPrompt {
+				if m.cfg.saveSessions {
+					m.addMessage(roleSystem, L.MsgSessionOn)
+				} else {
+					m.addMessage(roleSystem, L.MsgSessionOff)
+				}
+				m.updateViewport()
+			}
 		}
 		return m, nil
 	}
@@ -330,6 +350,10 @@ func (m model) handleConfigKey(msg tea.KeyMsg) (model, tea.Cmd) {
 				m.viewport.SetContent(m.renderConfigContent())
 			case 14:
 				return m.cycleLang()
+			case 15:
+				m.cfg.saveSessions = !m.cfg.saveSessions
+				saveConfig(m.cfg)
+				m.viewport.SetContent(m.renderConfigContent())
 			}
 		}
 
@@ -708,7 +732,9 @@ func (m model) selectCommand(cmd SlashCommand) (model, tea.Cmd) {
 		deleteSession()
 		m.updateViewport()
 	case actionExit:
-		saveSession(m.messages, m.agent.history)
+		if m.cfg.saveSessions {
+			saveSession(m.messages, m.agent.history)
+		}
 		return m, tea.Quit
 	case actionHelp:
 		m.addMessage(roleSystem, L.HelpText)
@@ -747,7 +773,9 @@ func (m model) handleAgentResponse(resp *AgentResponse) (model, tea.Cmd) {
 		return m.processNextTool()
 	}
 	m.state = stateIdle
-	saveSession(m.messages, m.agent.history)
+	if m.cfg.saveSessions {
+		saveSession(m.messages, m.agent.history)
+	}
 	return m, nil
 }
 

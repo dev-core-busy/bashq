@@ -84,6 +84,8 @@ type UIStrings struct {
 	FieldMode          string
 	FieldPrompt        string
 	FieldLang          string
+	FieldSession       string // "Sitzungen speichern"
+	SectionSession     string // "── SITZUNGEN ────────────────────────"
 
 	// Konfigurationswerte
 	FieldAPIKeyEmpty   string // "(leer – für lokale LLMs)"
@@ -92,10 +94,18 @@ type UIStrings struct {
 	ModeAuto           string // "⚡ Auto-Ausführen"
 	ModeAsk            string // "🛡 Fragen"
 	ModeToggleHint     string // "(Space/Enter)"
+	ModeSessionOn      string // "An"
+	ModeSessionOff     string // "Aus"
+
+	// Titel-Badges
+	BadgeSessionOn  string // " SESSION "
+	BadgeSessionOff string // " SESSION "
 
 	// Systemnachrichten (update.go)
 	MsgModeAuto       string // "⚡ Modus: Auto-Ausführen ..."
 	MsgModeAsk        string // "🛡 Modus: Fragen ..."
+	MsgSessionOn      string // "💾 Sitzungen werden gespeichert …"
+	MsgSessionOff     string // "🚫 Sitzungen werden nicht gespeichert …"
 	MsgShortcutEmpty  string // "F%d ist nicht belegt..."
 	MsgCancelled      string // "✗ Abgebrochen"
 	MsgAutoExecFmt    string // "⚡ Auto: $ %s\n  %s"
@@ -278,6 +288,8 @@ var de = UIStrings{
 	FieldMode:          "Ausführmodus",
 	FieldPrompt:        "System-Prompt",
 	FieldLang:          "Sprache",
+	FieldSession:       "Sitzungen speichern",
+	SectionSession:     "── SITZUNGEN ────────────────────────",
 
 	FieldAPIKeyEmpty:   "(leer – für lokale LLMs)",
 	FieldPromptEmpty:   "(leer – Enter zum Bearbeiten)",
@@ -285,9 +297,15 @@ var de = UIStrings{
 	ModeAuto:           "Auto-Ausführen",
 	ModeAsk:            "Fragen",
 	ModeToggleHint:     "(Space/Enter)",
+	ModeSessionOn:      "An",
+	ModeSessionOff:     "Aus",
+	BadgeSessionOn:     " SESSION ",
+	BadgeSessionOff:    " SESSION ",
 
 	MsgModeAuto:      "⚡ Modus: Auto-Ausführen (Befehle werden ohne Rückfrage ausgeführt)",
 	MsgModeAsk:       "🛡 Modus: Fragen (Befehle werden vor Ausführung bestätigt)",
+	MsgSessionOn:     "💾 Sitzungen werden gespeichert (Alt+S zum Umschalten)",
+	MsgSessionOff:    "🚫 Sitzungen werden nicht gespeichert (Alt+S zum Umschalten)",
 	MsgShortcutEmpty: "F%d ist nicht belegt. Belegen über /config → Tastenkürzel.",
 	MsgCancelled:     "✗ Abgebrochen",
 	MsgAutoExecFmt:   "⚡ Auto: $ %s\n  %s",
@@ -482,6 +500,8 @@ var en = UIStrings{
 	FieldMode:          "Exec mode",
 	FieldPrompt:        "System prompt",
 	FieldLang:          "Language",
+	FieldSession:       "Save sessions",
+	SectionSession:     "── SESSIONS ─────────────────────────",
 
 	FieldAPIKeyEmpty:   "(empty – for local LLMs)",
 	FieldPromptEmpty:   "(empty – press Enter to edit)",
@@ -489,9 +509,15 @@ var en = UIStrings{
 	ModeAuto:           "Auto-execute",
 	ModeAsk:            "Ask",
 	ModeToggleHint:     "(Space/Enter)",
+	ModeSessionOn:      "On",
+	ModeSessionOff:     "Off",
+	BadgeSessionOn:     " SESSION ",
+	BadgeSessionOff:    " SESSION ",
 
 	MsgModeAuto:      "⚡ Mode: Auto-execute (commands run without confirmation)",
 	MsgModeAsk:       "🛡 Mode: Ask (commands require confirmation before running)",
+	MsgSessionOn:     "💾 Sessions will be saved (Alt+S to toggle)",
+	MsgSessionOff:    "🚫 Sessions will not be saved (Alt+S to toggle)",
 	MsgShortcutEmpty: "F%d is not assigned. Configure it in /config → Shortcuts.",
 	MsgCancelled:     "✗ Cancelled",
 	MsgAutoExecFmt:   "⚡ Auto: $ %s\n  %s",
@@ -686,6 +712,8 @@ var zh = UIStrings{
 	FieldMode:          "执行模式",
 	FieldPrompt:        "系统提示词",
 	FieldLang:          "语言",
+	FieldSession:       "保存会话",
+	SectionSession:     "── 会话 ─────────────────────────────",
 
 	FieldAPIKeyEmpty:   "（空 – 本地 LLM 不需要）",
 	FieldPromptEmpty:   "（空 – 按 Enter 编辑）",
@@ -693,9 +721,15 @@ var zh = UIStrings{
 	ModeAuto:           "自动执行",
 	ModeAsk:            "询问",
 	ModeToggleHint:     "（空格/Enter）",
+	ModeSessionOn:      "开",
+	ModeSessionOff:     "关",
+	BadgeSessionOn:     " SESSION ",
+	BadgeSessionOff:    " SESSION ",
 
 	MsgModeAuto:      "⚡ 模式：自动执行（命令无需确认直接运行）",
 	MsgModeAsk:       "🛡 模式：询问（执行命令前需要确认）",
+	MsgSessionOn:     "💾 会话将被保存（Alt+S 切换）",
+	MsgSessionOff:    "🚫 会话不会被保存（Alt+S 切换）",
 	MsgShortcutEmpty: "F%d 未设置。请在 /config → 快捷键 中配置。",
 	MsgCancelled:     "✗ 已取消",
 	MsgAutoExecFmt:   "⚡ 自动: $ %s\n  %s",

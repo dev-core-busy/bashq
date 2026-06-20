@@ -51,6 +51,7 @@ type appConfig struct {
 	lang             string    // "de" | "en" | "zh"
 	profiles         []llmProfile
 	activeProfileIdx int // -1 = kein Profil aktiv (manuelle Konfiguration)
+	saveSessions     bool
 }
 
 // --- Tea-Nachrichten ---
@@ -148,7 +149,10 @@ func newModel() model {
 }
 
 func (m model) Init() tea.Cmd {
-	cmds := []tea.Cmd{textinput.Blink, cmdLoadSession()}
+	cmds := []tea.Cmd{textinput.Blink}
+	if m.cfg.saveSessions {
+		cmds = append(cmds, cmdLoadSession())
+	}
 	if m.cfg.activeProfileIdx >= 0 && m.cfg.activeProfileIdx < len(m.cfg.profiles) {
 		p := m.cfg.profiles[m.cfg.activeProfileIdx]
 		cmds = append(cmds, cmdHealthCheck(p.BaseURL, p.Name, m.cfg.profiles, m.cfg.activeProfileIdx))
