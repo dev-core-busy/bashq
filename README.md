@@ -48,22 +48,24 @@ No cloud. No account. No data leaving your machine. Just you, your terminal, and
 
 ## Install in One Line
 
+The binary lives in `~/.local/share/bashq/` — `/usr/local/bin/bashq` is a symlink to it. Auto-update writes to the binary in place; the symlink stays valid.
+
 **x86-64 (most Linux desktops/servers):**
 ```bash
-curl -fsSL https://github.com/dev-core-busy/bashq/releases/latest/download/bashq-linux-amd64 -o bashq && chmod +x bashq && sudo mv bashq /usr/local/bin/bashq
+mkdir -p ~/.local/share/bashq && curl -fsSL https://github.com/dev-core-busy/bashq/releases/latest/download/bashq-linux-amd64 -o ~/.local/share/bashq/bashq && chmod +x ~/.local/share/bashq/bashq && sudo ln -sf ~/.local/share/bashq/bashq /usr/local/bin/bashq
 ```
 
-**ARM64 (Raspberry Pi 4/5, Apple Silicon Linux VMs):**
+**ARM64 (Raspberry Pi 4/5):**
 ```bash
-curl -fsSL https://github.com/dev-core-busy/bashq/releases/latest/download/bashq-linux-arm64 -o bashq && chmod +x bashq && sudo mv bashq /usr/local/bin/bashq
+mkdir -p ~/.local/share/bashq && curl -fsSL https://github.com/dev-core-busy/bashq/releases/latest/download/bashq-linux-arm64 -o ~/.local/share/bashq/bashq && chmod +x ~/.local/share/bashq/bashq && sudo ln -sf ~/.local/share/bashq/bashq /usr/local/bin/bashq
 ```
 
 That's it. Run `bashq` from anywhere.
 
-> **No sudo?** Install to your home directory instead:
+> **No sudo?** Link into `~/.local/bin` instead:
 > ```bash
-> mkdir -p ~/.local/bin
-> curl -fsSL https://github.com/dev-core-busy/bashq/releases/latest/download/bashq-linux-amd64 -o ~/.local/bin/bashq && chmod +x ~/.local/bin/bashq
+> mkdir -p ~/.local/share/bashq ~/.local/bin
+> curl -fsSL https://github.com/dev-core-busy/bashq/releases/latest/download/bashq-linux-amd64 -o ~/.local/share/bashq/bashq && chmod +x ~/.local/share/bashq/bashq && ln -sf ~/.local/share/bashq/bashq ~/.local/bin/bashq
 > ```
 > Make sure `~/.local/bin` is in your `PATH` (`echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc`).
 
