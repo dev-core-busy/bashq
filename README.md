@@ -48,15 +48,22 @@ No cloud. No account. No data leaving your machine. Just you, your terminal, and
 
 ## Install in One Line
 
+**x86-64 (most Linux desktops/servers):**
 ```bash
-curl -fsSL https://github.com/dev-core-busy/bashq/releases/latest/download/bashq -o bashq && chmod +x bashq && sudo mv bashq /usr/local/bin/bashq
+curl -fsSL https://github.com/dev-core-busy/bashq/releases/latest/download/bashq-linux-amd64 -o bashq && chmod +x bashq && sudo mv bashq /usr/local/bin/bashq
+```
+
+**ARM64 (Raspberry Pi 4/5, Apple Silicon Linux VMs):**
+```bash
+curl -fsSL https://github.com/dev-core-busy/bashq/releases/latest/download/bashq-linux-arm64 -o bashq && chmod +x bashq && sudo mv bashq /usr/local/bin/bashq
 ```
 
 That's it. Run `bashq` from anywhere.
 
 > **No sudo?** Install to your home directory instead:
 > ```bash
-> curl -fsSL https://github.com/dev-core-busy/bashq/releases/latest/download/bashq -o ~/.local/bin/bashq && chmod +x ~/.local/bin/bashq
+> mkdir -p ~/.local/bin
+> curl -fsSL https://github.com/dev-core-busy/bashq/releases/latest/download/bashq-linux-amd64 -o ~/.local/bin/bashq && chmod +x ~/.local/bin/bashq
 > ```
 > Make sure `~/.local/bin` is in your `PATH` (`echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc`).
 
@@ -64,10 +71,10 @@ That's it. Run `bashq` from anywhere.
 
 ### Manual download
 
-Grab the binary from the **[Releases](../../releases)** page and run it directly:
+Grab the binary for your architecture from the **[Releases](../../releases)** page and run it directly:
 
 ```bash
-chmod +x bashq && ./bashq
+chmod +x bashq-linux-amd64 && ./bashq-linux-amd64
 ```
 
 ### 2. Connect your LLM

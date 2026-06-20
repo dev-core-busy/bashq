@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -72,10 +73,11 @@ func cmdCheckUpdate() tea.Cmd {
 			return updateCheckMsg{} // bereits aktuell
 		}
 
-		// Binary-Asset suchen
+		// Architekturspezifisches Asset suchen
+		assetName := "bashq-linux-" + runtime.GOARCH // z.B. bashq-linux-amd64
 		downloadURL := ""
 		for _, asset := range release.Assets {
-			if asset.Name == "bashq" {
+			if asset.Name == assetName {
 				downloadURL = asset.BrowserDownloadURL
 				break
 			}
