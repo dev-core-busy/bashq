@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -26,6 +29,67 @@ type healthCheckMsg struct {
 	ok          bool
 	profileName string
 	suggested   string // nächstes erreichbares Profil (leer = keines)
+}
+
+// discoverFromInput ist der smarte Einstiegspunkt für Discovery.
+// Akzeptiert drei Formate:
+//   - "http://host:port/v1"  → direkte Abfrage der URL
+//   - "host:port"            → nur diesen Port prüfen
+//   - "host"                 → vollständiger Portscan
+func discoverFromInput(input string) []foundModel {
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return nil
+	}
+	if strings.HasPrefix(input, "http://") || strings.HasPrefix(input, "https://") {
+		return probeURL(input)
+	}
+	if idx := strings.LastIndex(input, ":"); idx > 0 {
+		host := input[:idx]
+		if port, err := strconv.Atoi(input[idx+1:]); err == nil {
+			return tryPort(host, port)
+		}
+	}
+	return scanHost(input)
+}
+
+// probeURL probiert eine vollständige URL direkt, inkl. Fallbacks.
+func probeURL(rawURL string) []foundModel {
+	client := &http.Client{Timeout: 3 * time.Second}
+	baseURL := strings.TrimRight(rawURL, "/")
+
+	// URL so nehmen wie eingegeben (z.B. http://host:port/v1)
+	if models := fetchOpenAIModels(client, baseURL); len(models) > 0 {
+		return toFoundModels(models, baseURL, rawURL)
+	}
+
+	// Host-Basis ermitteln (Schema + Host + Port ohne Pfad)
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return nil
+	}
+	hostBase := u.Scheme + "://" + u.Host
+
+	// Falls kein /v1 am Ende, noch mit /v1 versuchen
+	if !strings.HasSuffix(baseURL, "/v1") {
+		if models := fetchOpenAIModels(client, hostBase+"/v1"); len(models) > 0 {
+			return toFoundModels(models, hostBase+"/v1", rawURL)
+		}
+	}
+
+	// Ollama native /api/tags
+	if models := fetchOllamaTags(client, hostBase); len(models) > 0 {
+		return toFoundModels(models, hostBase+"/v1", rawURL)
+	}
+	return nil
+}
+
+func toFoundModels(names []string, baseURL, source string) []foundModel {
+	result := make([]foundModel, len(names))
+	for i, name := range names {
+		result[i] = foundModel{Name: name, BaseURL: baseURL, Source: source}
+	}
+	return result
 }
 
 // scanHost scannt alle commonPorts einer IP und gibt gefundene Modelle zurück.

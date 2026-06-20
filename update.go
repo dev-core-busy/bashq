@@ -812,7 +812,7 @@ func tickCmd() tea.Cmd {
 
 func cmdDiscover(host string) tea.Cmd {
 	return func() tea.Msg {
-		return discoveryResultMsg{models: scanHost(host)}
+		return discoveryResultMsg{models: discoverFromInput(host)}
 	}
 }
 

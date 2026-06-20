@@ -254,7 +254,7 @@ var de = UIStrings{
 
 	DiscoveryTitle:           "Neues LLM-Profil",
 	DiscoveryInputLabel:      "IP/Hostname",
-	DiscoveryInputHint:       "Gib die IP-Adresse oder den Hostnamen des LLM-Servers ein",
+	DiscoveryInputHint:       "IP  ·  IP:Port  ·  http://IP:Port/v1",
 	DiscoverySearchLabel:     "Suchen",
 	DiscoveryScanFmt:         "Scanne %s …",
 	DiscoveryScanPorts:       "Ports: 11434  1234  8080  8000  9081  7860  5000  3000",
@@ -456,7 +456,7 @@ var en = UIStrings{
 
 	DiscoveryTitle:           "New LLM Profile",
 	DiscoveryInputLabel:      "IP/Hostname",
-	DiscoveryInputHint:       "Enter the IP address or hostname of the LLM server",
+	DiscoveryInputHint:       "IP  ·  IP:Port  ·  http://IP:Port/v1",
 	DiscoverySearchLabel:     "Search",
 	DiscoveryScanFmt:         "Scanning %s …",
 	DiscoveryScanPorts:       "Ports: 11434  1234  8080  8000  9081  7860  5000  3000",
@@ -658,7 +658,7 @@ var zh = UIStrings{
 
 	DiscoveryTitle:           "新建 LLM 配置文件",
 	DiscoveryInputLabel:      "IP/主机名",
-	DiscoveryInputHint:       "输入 LLM 服务器的 IP 地址或主机名",
+	DiscoveryInputHint:       "IP  ·  IP:端口  ·  http://IP:端口/v1",
 	DiscoverySearchLabel:     "搜索",
 	DiscoveryScanFmt:         "正在扫描 %s …",
 	DiscoveryScanPorts:       "端口: 11434  1234  8080  8000  9081  7860  5000  3000",
