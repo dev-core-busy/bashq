@@ -2,15 +2,14 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-// selfInstallToggle installiert oder deinstalliert bashq systemweit.
-// Ist bashq bereits in /usr/local/bin oder ~/.local/bin vorhanden, wird es entfernt.
-// Andernfalls wird es dorthin kopiert (erst /usr/local/bin, dann ~/.local/bin als Fallback).
+// selfInstallToggle erstellt oder entfernt einen Symlink auf die laufende Binary.
+// Symlink statt Kopie: der globale Aufruf zeigt immer auf die aktuelle Binary —
+// ein `go build` genügt, kein erneutes Installieren nötig.
 func selfInstallToggle() (msg string, isErr bool) {
 	exe, err := os.Executable()
 	if err != nil {
@@ -22,57 +21,38 @@ func selfInstallToggle() (msg string, isErr bool) {
 	home, _ := os.UserHomeDir()
 	userTarget := filepath.Join(home, ".local/bin/bashq")
 
-	// Prüfen ob bereits installiert
+	// Prüfen ob bereits installiert (Datei oder Symlink)
 	installedAt := ""
-	if _, err := os.Stat(systemTarget); err == nil {
+	if _, err := os.Lstat(systemTarget); err == nil {
 		installedAt = systemTarget
-	} else if _, err := os.Stat(userTarget); err == nil {
+	} else if _, err := os.Lstat(userTarget); err == nil {
 		installedAt = userTarget
 	}
 
 	if installedAt != "" {
-		// Deinstallieren
+		// Deinstallieren — Symlink oder Datei entfernen
 		if err := os.Remove(installedAt); err != nil {
 			return fmt.Sprintf("✗ Konnte %s nicht entfernen: %v", installedAt, err), true
 		}
-		return fmt.Sprintf("✓ bashq aus %s entfernt", installedAt), false
+		return fmt.Sprintf("✓ %s entfernt", installedAt), false
 	}
 
-	// Installieren – erst systemweit versuchen, dann ~/.local/bin
-	if err := copyBinary(exe, systemTarget); err == nil {
-		return fmt.Sprintf("✓ bashq nach %s installiert — von überall aufrufbar", systemTarget), false
+	// Installieren — erst systemweit versuchen, dann ~/.local/bin
+	if err := os.Symlink(exe, systemTarget); err == nil {
+		return fmt.Sprintf("✓ %s → %s\n  von überall aufrufbar — auch nach go build sofort aktuell", systemTarget, exe), false
 	}
 
+	// Fallback: ~/.local/bin
 	if err := os.MkdirAll(filepath.Dir(userTarget), 0755); err != nil {
 		return fmt.Sprintf("✗ Konnte ~/.local/bin nicht anlegen: %v", err), true
 	}
-	if err := copyBinary(exe, userTarget); err != nil {
-		return fmt.Sprintf("✗ Installation fehlgeschlagen: %v\n  Tipp: sudo cp %s /usr/local/bin/bashq", err, exe), true
+	if err := os.Symlink(exe, userTarget); err != nil {
+		return fmt.Sprintf("✗ Symlink fehlgeschlagen: %v\n  Tipp: sudo ln -sf %s /usr/local/bin/bashq", err, exe), true
 	}
 
 	localBinDir := filepath.Dir(userTarget)
 	if !strings.Contains(os.Getenv("PATH"), localBinDir) {
-		return fmt.Sprintf("✓ bashq nach %s installiert\n  ⚠ ~/.local/bin ist nicht im PATH — füge hinzu:\n    export PATH=\"$HOME/.local/bin:$PATH\"", userTarget), false
+		return fmt.Sprintf("✓ %s → %s\n  ⚠ ~/.local/bin ist nicht im PATH:\n    export PATH=\"$HOME/.local/bin:$PATH\"", userTarget, exe), false
 	}
-	return fmt.Sprintf("✓ bashq nach %s installiert — von überall aufrufbar", userTarget), false
-}
-
-func copyBinary(src, dst string) error {
-	in, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer in.Close()
-
-	out, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	if _, err = io.Copy(out, in); err != nil {
-		os.Remove(dst)
-		return err
-	}
-	return nil
+	return fmt.Sprintf("✓ %s → %s\n  von überall aufrufbar — auch nach go build sofort aktuell", userTarget, exe), false
 }
