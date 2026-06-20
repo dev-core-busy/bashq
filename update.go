@@ -12,8 +12,8 @@ import (
 )
 
 // configFieldCount: 0=baseURL, 1=model, 2=apiKey, 3=autoAllow, 4=customPrompt,
-// 5-13=F1-F9, 14=lang, 15=saveSessions
-const configFieldCount = 16
+// 5-13=F1-F9, 14=lang, 15=saveSessions, 16=autoUpdate
+const configFieldCount = 17
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -79,6 +79,40 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case updateCheckMsg:
+		if msg.err == nil && msg.info != nil {
+			switch m.cfg.autoUpdate {
+			case "auto":
+				m.addMessage(roleSystem, fmt.Sprintf(L.MsgUpdateDownloading, msg.info.version))
+				m.updateViewport()
+				return m, cmdDownloadUpdate(*msg.info)
+			default: // "ask"
+				m.pendingUpdate = msg.info
+				m.addMessage(roleSystem, fmt.Sprintf(L.MsgUpdateAvailable, msg.info.version))
+				m.updateViewport()
+			}
+		}
+		// nächste Prüfung in 30 Minuten einplanen
+		if m.cfg.autoUpdate != "off" {
+			return m, cmdScheduleUpdateCheck()
+		}
+		return m, nil
+
+	case updateDoneMsg:
+		if msg.err != nil {
+			m.addMessage(roleError, fmt.Sprintf(L.MsgUpdateError, msg.err.Error()))
+		} else {
+			m.addMessage(roleSystem, fmt.Sprintf(L.MsgUpdateDone, msg.version))
+		}
+		m.updateViewport()
+		return m, nil
+
+	case scheduleUpdateCheckMsg:
+		if m.cfg.autoUpdate != "off" {
+			return m, cmdCheckUpdate()
+		}
+		return m, nil
+
 	case healthCheckMsg:
 		if msg.ok {
 			m.addMessage(roleSystem, fmt.Sprintf(L.HealthOkFmt, msg.profileName))
@@ -132,6 +166,17 @@ func (m model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.addMessage(roleSystem, L.MsgModeAsk)
 			}
 			m.updateViewport()
+		}
+		return m, nil
+
+	// Alt+U: Pendentes Update installieren
+	case "alt+u":
+		if m.pendingUpdate != nil && m.state != stateExecuting {
+			pu := m.pendingUpdate
+			m.pendingUpdate = nil
+			m.addMessage(roleSystem, fmt.Sprintf(L.MsgUpdateDownloading, pu.version))
+			m.updateViewport()
+			return m, cmdDownloadUpdate(*pu)
 		}
 		return m, nil
 
@@ -230,6 +275,9 @@ func (m model) handleConfirmKey(msg tea.KeyMsg) (model, tea.Cmd) {
 func (m model) handleIdleKey(msg tea.KeyMsg) (model, tea.Cmd) {
 	switch msg.String() {
 	case "esc":
+		if m.pendingUpdate != nil {
+			m.pendingUpdate = nil
+		}
 		if m.showAC {
 			m.showAC = false
 			m.acSel = 0
@@ -357,6 +405,10 @@ func (m model) handleConfigKey(msg tea.KeyMsg) (model, tea.Cmd) {
 				m.cfg.saveSessions = !m.cfg.saveSessions
 				saveConfig(m.cfg)
 				m.viewport.SetContent(m.renderConfigContent())
+			case 16:
+				m.cfg.autoUpdate = cycleAutoUpdate(m.cfg.autoUpdate)
+				saveConfig(m.cfg)
+				m.viewport.SetContent(m.renderConfigContent())
 			}
 		}
 
@@ -435,6 +487,16 @@ func (m model) activateConfigField() (model, tea.Cmd) {
 
 	case 14: // Sprache – Toggle
 		return m.cycleLang()
+
+	case 15: // Sitzungen – Toggle
+		m.cfg.saveSessions = !m.cfg.saveSessions
+		saveConfig(m.cfg)
+		m.viewport.SetContent(m.renderConfigContent())
+
+	case 16: // Auto-Update – Cycle
+		m.cfg.autoUpdate = cycleAutoUpdate(m.cfg.autoUpdate)
+		saveConfig(m.cfg)
+		m.viewport.SetContent(m.renderConfigContent())
 
 	default:
 		// Einzeiliges Text-Feld
@@ -887,6 +949,18 @@ func tickCmd() tea.Cmd {
 	return tea.Tick(100*time.Millisecond, func(_ time.Time) tea.Msg {
 		return spinTickMsg{}
 	})
+}
+
+// cycleAutoUpdate dreht "ask" → "auto" → "off" → "ask"
+func cycleAutoUpdate(current string) string {
+	switch current {
+	case "ask":
+		return "auto"
+	case "auto":
+		return "off"
+	default:
+		return "ask"
+	}
 }
 
 func cmdDiscover(host string) tea.Cmd {

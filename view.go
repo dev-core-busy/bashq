@@ -394,6 +394,20 @@ func (m model) renderConfigContent() string {
 	sb.WriteString(m.renderConfigField(15, L.FieldSession, sessVal+" "+dimStyle.Render(L.ModeToggleHint), true))
 	sb.WriteString("\n")
 
+	// AUTO-UPDATE
+	sb.WriteString("  " + sectionStyle.Render(L.SectionUpdate) + "\n\n")
+	var updateVal string
+	switch m.cfg.autoUpdate {
+	case "auto":
+		updateVal = configAutoStyle.Render("⟳ " + L.ModeUpdateAuto)
+	case "off":
+		updateVal = dimStyle.Render("○ " + L.ModeUpdateOff)
+	default: // "ask"
+		updateVal = configAskStyle.Render("? " + L.ModeUpdateAsk)
+	}
+	sb.WriteString(m.renderConfigField(16, L.FieldAutoUpdate, updateVal+" "+dimStyle.Render(L.ModeToggleHint), true))
+	sb.WriteString("\n")
+
 	return sb.String()
 }
 

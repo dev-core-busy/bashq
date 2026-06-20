@@ -52,6 +52,7 @@ type appConfig struct {
 	profiles         []llmProfile
 	activeProfileIdx int // -1 = kein Profil aktiv (manuelle Konfiguration)
 	saveSessions     bool
+	autoUpdate       string // "ask" | "auto" | "off"
 }
 
 // --- Tea-Nachrichten ---
@@ -99,6 +100,8 @@ type model struct {
 	discErr     string
 	modelSel    int
 	tempProfile llmProfile
+
+	pendingUpdate *updateInfo // gesetzt wenn Update verfügbar und autoUpdate=="ask"
 
 	// Aktivitätsprotokoll
 	activities []activityEntry
@@ -156,6 +159,9 @@ func (m model) Init() tea.Cmd {
 	if m.cfg.activeProfileIdx >= 0 && m.cfg.activeProfileIdx < len(m.cfg.profiles) {
 		p := m.cfg.profiles[m.cfg.activeProfileIdx]
 		cmds = append(cmds, cmdHealthCheck(p.BaseURL, p.Name, m.cfg.profiles, m.cfg.activeProfileIdx))
+	}
+	if m.cfg.autoUpdate != "off" {
+		cmds = append(cmds, cmdCheckUpdate(), cmdScheduleUpdateCheck())
 	}
 	return tea.Batch(cmds...)
 }
@@ -361,6 +367,8 @@ func (m model) configFieldLine(i int) int {
 		return base + 24
 	case i == 15:
 		return base + 28
+	case i == 16:
+		return base + 32
 	}
 	return 0
 }

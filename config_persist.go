@@ -25,6 +25,7 @@ type savedConfig struct {
 	Profiles      []savedProfile `json:"profiles,omitempty"`
 	ActiveProfile int            `json:"active_profile"`
 	SaveSessions  *bool          `json:"save_sessions,omitempty"` // nil = default true
+	AutoUpdate    string         `json:"auto_update,omitempty"`   // "" = default "ask"
 }
 
 func configFilePath() (string, error) {
@@ -41,6 +42,7 @@ func loadConfig() appConfig {
 		model:            defaultModel,
 		autoAllow:        false,
 		saveSessions:     true,
+		autoUpdate:       "ask",
 		lang:             detectSystemLang(),
 		activeProfileIdx: -1,
 	}
@@ -71,6 +73,9 @@ func loadConfig() appConfig {
 	cfg.shortcuts = saved.Shortcuts
 	if saved.SaveSessions != nil {
 		cfg.saveSessions = *saved.SaveSessions
+	}
+	if saved.AutoUpdate != "" {
+		cfg.autoUpdate = saved.AutoUpdate
 	}
 	if saved.Lang != "" {
 		cfg.lang = saved.Lang
@@ -136,6 +141,7 @@ func saveConfig(cfg appConfig) error {
 		Profiles:      savedProfiles,
 		ActiveProfile: activeIdx,
 		SaveSessions:  &saveSessions,
+		AutoUpdate:    cfg.autoUpdate,
 	}, "", "  ")
 	if err != nil {
 		return err

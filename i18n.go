@@ -86,6 +86,8 @@ type UIStrings struct {
 	FieldLang          string
 	FieldSession       string // "Sitzungen speichern"
 	SectionSession     string // "── SITZUNGEN ────────────────────────"
+	FieldAutoUpdate    string // "Auto-Update"
+	SectionUpdate      string // "── AUTO-UPDATE ──────────────────────"
 
 	// Konfigurationswerte
 	FieldAPIKeyEmpty   string // "(leer – für lokale LLMs)"
@@ -96,12 +98,20 @@ type UIStrings struct {
 	ModeToggleHint     string // "(Space/Enter)"
 	ModeSessionOn      string // "An"
 	ModeSessionOff     string // "Aus"
+	ModeUpdateAsk      string // "Nachfragen"
+	ModeUpdateAuto     string // "Automatisch"
+	ModeUpdateOff      string // "Deaktiviert"
 
 	// Titel-Badges
 	BadgeSessionOn  string // " SESSION "
 	BadgeSessionOff string // " SESSION "
 
 	// Systemnachrichten (update.go)
+	MsgUpdateAvailable  string // "🔄 Neue Version %s verfügbar…"
+	MsgUpdateDownloading string // "⬇ Lade Update %s herunter…"
+	MsgUpdateDone       string // "✓ bashq %s installiert. Bitte neu starten."
+	MsgUpdateUpToDate   string // "✓ bashq ist aktuell (%s)"
+	MsgUpdateError      string // "⚠ Update fehlgeschlagen: %s"
 	MsgModeAuto       string // "⚡ Modus: Auto-Ausführen ..."
 	MsgModeAsk        string // "🛡 Modus: Fragen ..."
 	MsgSessionOn      string // "💾 Sitzungen werden gespeichert …"
@@ -291,6 +301,8 @@ var de = UIStrings{
 	FieldLang:          "Sprache",
 	FieldSession:       "Sitzungen speichern",
 	SectionSession:     "── SITZUNGEN ────────────────────────",
+	FieldAutoUpdate:    "Auto-Update",
+	SectionUpdate:      "── AUTO-UPDATE ──────────────────────",
 
 	FieldAPIKeyEmpty:   "(leer – für lokale LLMs)",
 	FieldPromptEmpty:   "(leer – Enter zum Bearbeiten)",
@@ -300,9 +312,17 @@ var de = UIStrings{
 	ModeToggleHint:     "(Space/Enter)",
 	ModeSessionOn:      "An",
 	ModeSessionOff:     "Aus",
+	ModeUpdateAsk:      "Nachfragen",
+	ModeUpdateAuto:     "Automatisch",
+	ModeUpdateOff:      "Deaktiviert",
 	BadgeSessionOn:     " SESSION ",
 	BadgeSessionOff:    " SESSION ",
 
+	MsgUpdateAvailable:   "🔄 Neue Version %s verfügbar. Alt+U installieren · Esc ignorieren",
+	MsgUpdateDownloading: "⬇ Lade bashq %s herunter…",
+	MsgUpdateDone:        "✓ bashq %s installiert — bitte neu starten (Ctrl+C, dann bashq)",
+	MsgUpdateUpToDate:    "✓ bashq ist aktuell (%s)",
+	MsgUpdateError:       "⚠ Update fehlgeschlagen: %s",
 	MsgModeAuto:      "⚡ Modus: Auto-Ausführen (Befehle werden ohne Rückfrage ausgeführt)",
 	MsgModeAsk:       "🛡 Modus: Fragen (Befehle werden vor Ausführung bestätigt)",
 	MsgSessionOn:     "💾 Sitzungen werden gespeichert (Alt+S zum Umschalten)",
@@ -505,6 +525,8 @@ var en = UIStrings{
 	FieldLang:          "Language",
 	FieldSession:       "Save sessions",
 	SectionSession:     "── SESSIONS ─────────────────────────",
+	FieldAutoUpdate:    "Auto-update",
+	SectionUpdate:      "── AUTO-UPDATE ──────────────────────",
 
 	FieldAPIKeyEmpty:   "(empty – for local LLMs)",
 	FieldPromptEmpty:   "(empty – press Enter to edit)",
@@ -514,9 +536,17 @@ var en = UIStrings{
 	ModeToggleHint:     "(Space/Enter)",
 	ModeSessionOn:      "On",
 	ModeSessionOff:     "Off",
+	ModeUpdateAsk:      "Ask",
+	ModeUpdateAuto:     "Auto",
+	ModeUpdateOff:      "Off",
 	BadgeSessionOn:     " SESSION ",
 	BadgeSessionOff:    " SESSION ",
 
+	MsgUpdateAvailable:   "🔄 New version %s available. Alt+U to install · Esc to skip",
+	MsgUpdateDownloading: "⬇ Downloading bashq %s…",
+	MsgUpdateDone:        "✓ bashq %s installed — please restart (Ctrl+C, then bashq)",
+	MsgUpdateUpToDate:    "✓ bashq is up to date (%s)",
+	MsgUpdateError:       "⚠ Update failed: %s",
 	MsgModeAuto:      "⚡ Mode: Auto-execute (commands run without confirmation)",
 	MsgModeAsk:       "🛡 Mode: Ask (commands require confirmation before running)",
 	MsgSessionOn:     "💾 Sessions will be saved (Alt+S to toggle)",
@@ -719,6 +749,8 @@ var zh = UIStrings{
 	FieldLang:          "语言",
 	FieldSession:       "保存会话",
 	SectionSession:     "── 会话 ─────────────────────────────",
+	FieldAutoUpdate:    "自动更新",
+	SectionUpdate:      "── 自动更新 ──────────────────────────",
 
 	FieldAPIKeyEmpty:   "（空 – 本地 LLM 不需要）",
 	FieldPromptEmpty:   "（空 – 按 Enter 编辑）",
@@ -728,9 +760,17 @@ var zh = UIStrings{
 	ModeToggleHint:     "（空格/Enter）",
 	ModeSessionOn:      "开",
 	ModeSessionOff:     "关",
+	ModeUpdateAsk:      "询问",
+	ModeUpdateAuto:     "自动",
+	ModeUpdateOff:      "关闭",
 	BadgeSessionOn:     " SESSION ",
 	BadgeSessionOff:    " SESSION ",
 
+	MsgUpdateAvailable:   "🔄 新版本 %s 可用。Alt+U 安装 · Esc 跳过",
+	MsgUpdateDownloading: "⬇ 正在下载 bashq %s…",
+	MsgUpdateDone:        "✓ bashq %s 已安装 — 请重启（Ctrl+C，然后 bashq）",
+	MsgUpdateUpToDate:    "✓ bashq 已是最新版本（%s）",
+	MsgUpdateError:       "⚠ 更新失败：%s",
 	MsgModeAuto:      "⚡ 模式：自动执行（命令无需确认直接运行）",
 	MsgModeAsk:       "🛡 模式：询问（执行命令前需要确认）",
 	MsgSessionOn:     "💾 会话将被保存（Alt+S 切换）",
