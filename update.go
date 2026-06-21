@@ -315,7 +315,7 @@ func (m model) handleIdleKey(msg tea.KeyMsg) (model, tea.Cmd) {
 		}
 		return m, nil
 
-	case "up":
+	case "up", "shift+up":
 		if m.showAC && len(m.filtered) > 0 {
 			if m.acSel > 0 {
 				m.acSel--
@@ -324,43 +324,39 @@ func (m model) handleIdleKey(msg tea.KeyMsg) (model, tea.Cmd) {
 			}
 			return m, nil
 		}
+		// Eingabefeld leer oder Shift+↑: History rückwärts
+		if len(m.inputHistory) > 0 && (m.input.Value() == "" || msg.String() == "shift+up" || m.historyIdx != -1) {
+			if m.historyIdx == -1 {
+				m.inputBeforeHistory = m.input.Value()
+				m.historyIdx = len(m.inputHistory) - 1
+			} else if m.historyIdx > 0 {
+				m.historyIdx--
+			}
+			m.input.SetValue(m.inputHistory[m.historyIdx])
+			m.input.CursorEnd()
+			return m, nil
+		}
 		m.viewport.LineUp(3)
 		return m, nil
 
-	case "down":
+	case "down", "shift+down":
 		if m.showAC && len(m.filtered) > 0 {
 			m.acSel = (m.acSel + 1) % len(m.filtered)
 			return m, nil
 		}
+		// History vorwärts (nur wenn wir uns im History-Modus befinden)
+		if m.historyIdx != -1 {
+			if m.historyIdx < len(m.inputHistory)-1 {
+				m.historyIdx++
+				m.input.SetValue(m.inputHistory[m.historyIdx])
+			} else {
+				m.historyIdx = -1
+				m.input.SetValue(m.inputBeforeHistory)
+			}
+			m.input.CursorEnd()
+			return m, nil
+		}
 		m.viewport.LineDown(3)
-		return m, nil
-
-	case "shift+up":
-		if len(m.inputHistory) == 0 {
-			return m, nil
-		}
-		if m.historyIdx == -1 {
-			m.inputBeforeHistory = m.input.Value()
-			m.historyIdx = len(m.inputHistory) - 1
-		} else if m.historyIdx > 0 {
-			m.historyIdx--
-		}
-		m.input.SetValue(m.inputHistory[m.historyIdx])
-		m.input.CursorEnd()
-		return m, nil
-
-	case "shift+down":
-		if m.historyIdx == -1 {
-			return m, nil
-		}
-		if m.historyIdx < len(m.inputHistory)-1 {
-			m.historyIdx++
-			m.input.SetValue(m.inputHistory[m.historyIdx])
-		} else {
-			m.historyIdx = -1
-			m.input.SetValue(m.inputBeforeHistory)
-		}
-		m.input.CursorEnd()
 		return m, nil
 
 	case "tab":
