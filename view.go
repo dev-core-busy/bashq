@@ -12,6 +12,15 @@ func (m model) View() string {
 		return L.Starting
 	}
 
+	// Viewport-Höhe immer frisch berechnen — State kann sich ändern ohne recalcViewport-Aufruf
+	if m.height > 0 {
+		h := m.height - 2 - m.bottomLines()
+		if h < 1 {
+			h = 1
+		}
+		m.viewport.Height = h
+	}
+
 	title := m.renderTitle()
 	divider := dividerStyle.Render(strings.Repeat("─", m.width))
 	bottom := m.renderBottom()
