@@ -18,13 +18,15 @@ type savedSession struct {
 	SavedAt      string             `json:"saved_at"`
 	Messages     []savedChatMessage `json:"messages"`
 	AgentHistory json.RawMessage    `json:"agent_history,omitempty"`
+	InputHistory []string           `json:"input_history,omitempty"`
 }
 
 // sessionLoadedMsg wird nach asynchronem Laden der gespeicherten Sitzung gesendet.
 type sessionLoadedMsg struct {
-	messages []chatMessage
-	history  []Message
-	savedAt  string // bereits formatiert: "20.06.2025 10:30"
+	messages     []chatMessage
+	history      []Message
+	inputHistory []string
+	savedAt      string // bereits formatiert: "20.06.2025 10:30"
 }
 
 func sessionFilePath() (string, error) {
@@ -35,9 +37,9 @@ func sessionFilePath() (string, error) {
 	return filepath.Join(dir, "bashq", "session.json"), nil
 }
 
-// saveSession schreibt Chatverlauf und Agenten-History auf Disk.
+// saveSession schreibt Chatverlauf, Agenten-History und Eingabe-History auf Disk.
 // Fehler werden ignoriert (best-effort).
-func saveSession(messages []chatMessage, history []Message) {
+func saveSession(messages []chatMessage, history []Message, inputHistory []string) {
 	if len(messages) == 0 {
 		return
 	}
@@ -63,6 +65,7 @@ func saveSession(messages []chatMessage, history []Message) {
 		SavedAt:      time.Now().Format(time.RFC3339),
 		Messages:     savedMsgs,
 		AgentHistory: json.RawMessage(histJSON),
+		InputHistory: inputHistory,
 	}, "", "  ")
 	if err != nil {
 		return
@@ -104,7 +107,7 @@ func cmdLoadSession() tea.Cmd {
 			at = t.Format("02.01.2006 15:04")
 		}
 
-		return sessionLoadedMsg{messages: msgs, history: hist, savedAt: at}
+		return sessionLoadedMsg{messages: msgs, history: hist, inputHistory: s.InputHistory, savedAt: at}
 	}
 }
 

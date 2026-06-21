@@ -80,6 +80,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.messages = append([]chatMessage{header}, msg.messages...)
 			m.agent.history = msg.history
+			if len(msg.inputHistory) > 0 {
+				m.inputHistory = msg.inputHistory
+			}
 			m.updateViewport()
 		}
 		return m, nil
@@ -160,7 +163,7 @@ func (m model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "ctrl+q":
 		if m.cfg.saveSessions {
-			saveSession(m.messages, m.agent.history)
+			saveSession(m.messages, m.agent.history, m.inputHistory)
 		}
 		return m, tea.Quit
 
@@ -866,7 +869,7 @@ func (m model) selectCommand(cmd SlashCommand) (model, tea.Cmd) {
 		m.updateViewport()
 	case actionExit:
 		if m.cfg.saveSessions {
-			saveSession(m.messages, m.agent.history)
+			saveSession(m.messages, m.agent.history, m.inputHistory)
 		}
 		return m, tea.Quit
 	case actionHelp:
@@ -924,7 +927,7 @@ func (m model) handleAgentResponse(resp *AgentResponse) (model, tea.Cmd) {
 	}
 	m.state = stateIdle
 	if m.cfg.saveSessions {
-		saveSession(m.messages, m.agent.history)
+		saveSession(m.messages, m.agent.history, m.inputHistory)
 	}
 	return m, nil
 }
