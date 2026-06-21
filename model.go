@@ -114,6 +114,10 @@ type model struct {
 	spinFrames []string
 
 	cancelFunc context.CancelFunc // Abbruch der laufenden LLM-Anfrage oder Befehlsausführung
+
+	inputHistory       []string // gesendete Nutzernachrichten, neueste am Ende
+	historyIdx         int      // -1 = kein History-Modus; sonst Index in inputHistory
+	inputBeforeHistory string   // gespeicherte Eingabe beim Einstieg in den History-Modus
 }
 
 func newModel() model {
@@ -152,6 +156,7 @@ func newModel() model {
 		state:        stateIdle,
 		cfg:          cfg,
 		spinFrames:   []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"},
+		historyIdx:   -1,
 	}
 }
 

@@ -335,6 +335,34 @@ func (m model) handleIdleKey(msg tea.KeyMsg) (model, tea.Cmd) {
 		m.viewport.LineDown(3)
 		return m, nil
 
+	case "shift+up":
+		if len(m.inputHistory) == 0 {
+			return m, nil
+		}
+		if m.historyIdx == -1 {
+			m.inputBeforeHistory = m.input.Value()
+			m.historyIdx = len(m.inputHistory) - 1
+		} else if m.historyIdx > 0 {
+			m.historyIdx--
+		}
+		m.input.SetValue(m.inputHistory[m.historyIdx])
+		m.input.CursorEnd()
+		return m, nil
+
+	case "shift+down":
+		if m.historyIdx == -1 {
+			return m, nil
+		}
+		if m.historyIdx < len(m.inputHistory)-1 {
+			m.historyIdx++
+			m.input.SetValue(m.inputHistory[m.historyIdx])
+		} else {
+			m.historyIdx = -1
+			m.input.SetValue(m.inputBeforeHistory)
+		}
+		m.input.CursorEnd()
+		return m, nil
+
 	case "tab":
 		if m.showAC && len(m.filtered) > 0 {
 			m.acSel = (m.acSel + 1) % len(m.filtered)
@@ -794,6 +822,12 @@ func (m model) submitInput() (model, tea.Cmd) {
 	if text == "" {
 		return m, nil
 	}
+	// History: doppelte aufeinanderfolgende Einträge vermeiden
+	if len(m.inputHistory) == 0 || m.inputHistory[len(m.inputHistory)-1] != text {
+		m.inputHistory = append(m.inputHistory, text)
+	}
+	m.historyIdx = -1
+	m.inputBeforeHistory = ""
 	m.input.SetValue("")
 	m.showAC = false
 	m.acSel = 0
