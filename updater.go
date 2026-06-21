@@ -69,8 +69,8 @@ func cmdCheckUpdate() tea.Cmd {
 			return updateCheckMsg{err: err}
 		}
 
-		if release.TagName == "" || release.TagName == currentVersion {
-			return updateCheckMsg{} // bereits aktuell
+		if release.TagName == "" || release.TagName <= currentVersion {
+			return updateCheckMsg{} // bereits aktuell oder älter
 		}
 
 		// Architekturspezifisches Asset suchen
