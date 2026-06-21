@@ -30,6 +30,8 @@ type UIStrings struct {
 	HintModeLabel     string // "Modus"
 	HintShortcutKeys  string // "F1–F9"
 	HintShortcutLabel string // "Kürzel"
+	HintHistoryKeys   string // "Alt+↑↓"
+	HintHistoryLabel  string // "History"
 	HintQuitKey       string // "Ctrl+Q"
 	HintQuitLabel     string // "Beenden"
 	ACHint            string
@@ -230,6 +232,8 @@ var de = UIStrings{
 	HintModeLabel:     "Modus",
 	HintShortcutKeys:  "F1–F9/Alt+1–9",
 	HintShortcutLabel: "Kürzel",
+	HintHistoryKeys:   "Alt+↑↓",
+	HintHistoryLabel:  "History",
 	HintQuitKey:       "Ctrl+Q",
 	HintQuitLabel:     "Beenden",
 	ACHint:            "  ↑↓/Tab: wählen · Enter: bestätigen · Esc: schließen",
@@ -458,6 +462,8 @@ var en = UIStrings{
 	HintModeLabel:     "mode",
 	HintShortcutKeys:  "F1–F9/Alt+1–9",
 	HintShortcutLabel: "shortcuts",
+	HintHistoryKeys:   "Alt+↑↓",
+	HintHistoryLabel:  "history",
 	HintQuitKey:       "Ctrl+Q",
 	HintQuitLabel:     "quit",
 	ACHint:            "  ↑↓/Tab: select · Enter: confirm · Esc: close",
@@ -686,6 +692,8 @@ var zh = UIStrings{
 	HintModeLabel:     "模式",
 	HintShortcutKeys:  "F1–F9/Alt+1–9",
 	HintShortcutLabel: "快捷键",
+	HintHistoryKeys:   "Alt+↑↓",
+	HintHistoryLabel:  "历史",
 	HintQuitKey:       "Ctrl+Q",
 	HintQuitLabel:     "退出",
 	ACHint:            "  ↑↓/Tab: 选择 · Enter: 确认 · Esc: 关闭",
