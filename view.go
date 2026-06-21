@@ -128,7 +128,8 @@ func (m model) renderIdleBottom() string {
 		hintKeyStyle.Render(L.HintSlashKey) + hintStyle.Render(" "+L.HintSlashLabel+"  ") +
 		hintKeyStyle.Render(L.HintScrollKeys) + hintStyle.Render(" "+L.HintScrollLabel+"  ") +
 		hintKeyStyle.Render(L.HintModeKey) + hintStyle.Render(" "+L.HintModeLabel+"  ") +
-		hintKeyStyle.Render(L.HintShortcutKeys) + hintStyle.Render(" "+L.HintShortcutLabel)
+		hintKeyStyle.Render(L.HintShortcutKeys) + hintStyle.Render(" "+L.HintShortcutLabel+"  ") +
+		hintKeyStyle.Render(L.HintQuitKey) + hintStyle.Render(" "+L.HintQuitLabel)
 	return inputLine + "\n" + hint
 }
 
