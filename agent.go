@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -126,22 +127,29 @@ func newAgent() *Agent {
 }
 
 // SendMessage schickt eine Nutzernachricht und gibt die Antwort zurück
-func (a *Agent) SendMessage(userMsg string) (*AgentResponse, error) {
+func (a *Agent) SendMessage(ctx context.Context, userMsg string) (*AgentResponse, error) {
 	a.history = append(a.history, Message{
 		Role:    "user",
 		Content: userMsg,
 	})
-	return a.callLLM()
+	return a.callLLM(ctx)
 }
 
 // SendToolResult schickt das Ergebnis einer Tool-Ausführung
-func (a *Agent) SendToolResult(callID, result string) (*AgentResponse, error) {
+func (a *Agent) SendToolResult(ctx context.Context, callID, result string) (*AgentResponse, error) {
 	a.history = append(a.history, Message{
 		Role:       "tool",
 		Content:    result,
 		ToolCallID: callID,
 	})
-	return a.callLLM()
+	return a.callLLM(ctx)
+}
+
+// PopLastMessage entfernt die zuletzt hinzugefügte Nachricht aus der History (für Abbruch).
+func (a *Agent) PopLastMessage() {
+	if len(a.history) > 1 {
+		a.history = a.history[:len(a.history)-1]
+	}
 }
 
 // Reset leert den Gesprächsverlauf (außer System-Prompt)
@@ -151,7 +159,7 @@ func (a *Agent) Reset() {
 	}
 }
 
-func (a *Agent) callLLM() (*AgentResponse, error) {
+func (a *Agent) callLLM(ctx context.Context) (*AgentResponse, error) {
 	// System-Prompt dynamisch aufbauen (customPrompt voranstellen wenn gesetzt)
 	msgs := make([]Message, len(a.history))
 	copy(msgs, a.history)
@@ -174,7 +182,7 @@ func (a *Agent) callLLM() (*AgentResponse, error) {
 		return nil, fmt.Errorf("JSON-Fehler: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", a.baseURL+"/chat/completions", bytes.NewReader(data))
+	req, err := http.NewRequestWithContext(ctx, "POST", a.baseURL+"/chat/completions", bytes.NewReader(data))
 	if err != nil {
 		return nil, fmt.Errorf("Request-Fehler: %w", err)
 	}

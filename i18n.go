@@ -237,9 +237,9 @@ var de = UIStrings{
 	ConfirmCancelLabel: "Abbrechen",
 
 	LoadingThinking:   " Denke nach…",
-	LoadingQuit:       "  Ctrl+Q Beenden",
+	LoadingQuit:       "  Ctrl+C Abbrechen",
 	LoadingRunning:    " Führe aus: ",
-	LoadingCmdRunning: "  Befehl läuft…",
+	LoadingCmdRunning: "  Ctrl+C Abbrechen",
 
 	ConfigNavKeys:      "↑↓",
 	ConfigNavLabel:     "navigieren",
@@ -431,6 +431,7 @@ TASTENKÜRZEL:
   F1–F9       – Benutzerdefinierte Kürzel (in /config belegen)
   Shift+Tab   – Ausführmodus umschalten (Fragen ↔ Auto)
   Esc         – Autovervollständigung schließen
+  Ctrl+C      – Laufende Anfrage / Befehl abbrechen
   Ctrl+Q      – Beenden`,
 }
 
@@ -462,9 +463,9 @@ var en = UIStrings{
 	ConfirmCancelLabel: "Cancel",
 
 	LoadingThinking:   " Thinking…",
-	LoadingQuit:       "  Ctrl+Q Quit",
+	LoadingQuit:       "  Ctrl+C Cancel",
 	LoadingRunning:    " Running: ",
-	LoadingCmdRunning: "  Command running…",
+	LoadingCmdRunning: "  Ctrl+C Cancel",
 
 	ConfigNavKeys:      "↑↓",
 	ConfigNavLabel:     "navigate",
@@ -656,6 +657,7 @@ KEYBOARD SHORTCUTS:
   F1–F9       – Custom shortcuts (configure in /config)
   Shift+Tab   – Toggle execution mode (Ask ↔ Auto)
   Esc         – Close autocomplete
+  Ctrl+C      – Cancel running request / command
   Ctrl+Q      – Quit`,
 }
 
@@ -687,9 +689,9 @@ var zh = UIStrings{
 	ConfirmCancelLabel: "取消",
 
 	LoadingThinking:   " 思考中…",
-	LoadingQuit:       "  Ctrl+Q 退出",
+	LoadingQuit:       "  Ctrl+C 取消",
 	LoadingRunning:    " 正在执行：",
-	LoadingCmdRunning: "  命令运行中…",
+	LoadingCmdRunning: "  Ctrl+C 取消",
 
 	ConfigNavKeys:      "↑↓",
 	ConfigNavLabel:     "导航",
@@ -881,6 +883,7 @@ var zh = UIStrings{
   F1–F9       – 自定义快捷键（在 /config 中设置）
   Shift+Tab   – 切换执行模式（询问 ↔ 自动）
   Esc         – 关闭自动补全
+  Ctrl+C      – 取消当前请求 / 命令
   Ctrl+Q      – 退出`,
 }
 

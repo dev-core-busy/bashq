@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textarea"
@@ -59,9 +60,10 @@ type appConfig struct {
 
 type agentResponseMsg struct{ resp *AgentResponse }
 type commandResultMsg struct {
-	callID  string
-	output  string
-	err     error
+	callID    string
+	output    string
+	err       error
+	cancelled bool
 }
 type errMsg struct{ err error }
 type spinTickMsg struct{}
@@ -110,6 +112,8 @@ type model struct {
 	ready      bool
 	spinner    int
 	spinFrames []string
+
+	cancelFunc context.CancelFunc // Abbruch der laufenden LLM-Anfrage oder Befehlsausführung
 }
 
 func newModel() model {

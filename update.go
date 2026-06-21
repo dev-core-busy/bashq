@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -46,6 +48,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case errMsg:
 		m.state = stateIdle
+		if errors.Is(msg.err, context.Canceled) {
+			return m, nil // Abbruch durch Ctrl+C — bereits im Handler behandelt
+		}
 		m.logActivity(actError, msg.err.Error())
 		m.addMessage(roleError, msg.err.Error())
 		m.updateViewport()
@@ -159,6 +164,19 @@ func (m model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, tea.Quit
 
+	case "ctrl+c":
+		if m.state == stateLoading || m.state == stateExecuting {
+			if m.cancelFunc != nil {
+				m.cancelFunc()
+				m.cancelFunc = nil
+			}
+			m.agent.PopLastMessage()
+			m.state = stateIdle
+			m.addMessage(roleSystem, L.MsgCancelled)
+			m.updateViewport()
+			return m, nil
+		}
+
 	// Shift+Tab: Ausführmodus global umschalten
 	case "shift+tab":
 		m.cfg.autoAllow = !m.cfg.autoAllow
@@ -245,7 +263,9 @@ func (m model) triggerShortcut(idx int) (model, tea.Cmd) {
 	m.updateViewport()
 	m.state = stateLoading
 	m.logActivity(actUser, fmt.Sprintf("[F%d] %s", idx+1, msg))
-	return m, tea.Batch(cmdSendMessage(m.agent, msg), tickCmd())
+	ctx, cancel := context.WithCancel(context.Background())
+	m.cancelFunc = cancel
+	return m, tea.Batch(cmdSendMessage(ctx, m.agent, msg), tickCmd())
 }
 
 func (m model) handleConfirmKey(msg tea.KeyMsg) (model, tea.Cmd) {
@@ -262,7 +282,9 @@ func (m model) handleConfirmKey(msg tea.KeyMsg) (model, tea.Cmd) {
 		m.logActivity(actExec, tool.command)
 		m.addMessage(roleSystem, "$ "+tool.command)
 		m.updateViewport()
-		return m, tea.Batch(cmdRunCommand(tool.id, tool.command), tickCmd())
+		ctx, cancel := context.WithCancel(context.Background())
+		m.cancelFunc = cancel
+		return m, tea.Batch(cmdRunCommand(ctx, tool.id, tool.command), tickCmd())
 	case "n", "esc":
 		tool := m.pendingTool
 		m.pendingTool = nil
@@ -270,8 +292,10 @@ func (m model) handleConfirmKey(msg tea.KeyMsg) (model, tea.Cmd) {
 		m.state = stateLoading
 		m.addMessage(roleSystem, L.MsgCancelled)
 		m.updateViewport()
+		ctx, cancel := context.WithCancel(context.Background())
+		m.cancelFunc = cancel
 		return m, tea.Batch(
-			cmdSendToolResult(m.agent, tool.id, L.MsgToolRejected),
+			cmdSendToolResult(ctx, m.agent, tool.id, L.MsgToolRejected),
 			tickCmd(),
 		)
 	}
@@ -778,7 +802,9 @@ func (m model) submitInput() (model, tea.Cmd) {
 	m.logActivity(actUser, text)
 	m.updateViewport()
 	m.state = stateLoading
-	return m, tea.Batch(cmdSendMessage(m.agent, text), tickCmd())
+	ctx, cancel := context.WithCancel(context.Background())
+	m.cancelFunc = cancel
+	return m, tea.Batch(cmdSendMessage(ctx, m.agent, text), tickCmd())
 }
 
 func (m model) selectCommand(cmd SlashCommand) (model, tea.Cmd) {
@@ -793,7 +819,9 @@ func (m model) selectCommand(cmd SlashCommand) (model, tea.Cmd) {
 		m.logActivity(actUser, cmd.Name)
 		m.updateViewport()
 		m.state = stateLoading
-		return m, tea.Batch(cmdSendMessage(m.agent, cmd.Message), tickCmd())
+		ctx, cancel := context.WithCancel(context.Background())
+		m.cancelFunc = cancel
+		return m, tea.Batch(cmdSendMessage(ctx, m.agent, cmd.Message), tickCmd())
 	case actionPrompt:
 		m.input.SetValue(cmd.Prompt)
 		m.input.CursorEnd()
@@ -881,7 +909,9 @@ func (m model) processNextTool() (model, tea.Cmd) {
 		m.logActivity(actExec, tool.command)
 		m.addMessage(roleSystem, fmt.Sprintf(L.MsgAutoExecFmt, tool.command, tool.explanation))
 		m.updateViewport()
-		return m, tea.Batch(cmdRunCommand(tool.id, tool.command), tickCmd())
+		ctx, cancel := context.WithCancel(context.Background())
+		m.cancelFunc = cancel
+		return m, tea.Batch(cmdRunCommand(ctx, tool.id, tool.command), tickCmd())
 	}
 
 	m.pendingTool = &tool
@@ -892,6 +922,9 @@ func (m model) processNextTool() (model, tea.Cmd) {
 }
 
 func (m model) handleCommandResult(msg commandResultMsg) (model, tea.Cmd) {
+	if msg.cancelled {
+		return m, nil // Abbruch bereits durch Ctrl+C-Handler behandelt
+	}
 	output := strings.TrimRight(msg.output, "\n")
 	if output == "" {
 		output = L.MsgNoOutput
@@ -906,15 +939,17 @@ func (m model) handleCommandResult(msg commandResultMsg) (model, tea.Cmd) {
 	m.addMessage(roleSystem, output)
 	m.updateViewport()
 
+	ctx, cancel := context.WithCancel(context.Background())
+	m.cancelFunc = cancel
 	m.state = stateLoading
-	return m, tea.Batch(cmdSendToolResult(m.agent, msg.callID, output), tickCmd())
+	return m, tea.Batch(cmdSendToolResult(ctx, m.agent, msg.callID, output), tickCmd())
 }
 
 // --- Tea-Befehlsfabriken ---
 
-func cmdSendMessage(agent *Agent, msg string) tea.Cmd {
+func cmdSendMessage(ctx context.Context, agent *Agent, msg string) tea.Cmd {
 	return func() tea.Msg {
-		resp, err := agent.SendMessage(msg)
+		resp, err := agent.SendMessage(ctx, msg)
 		if err != nil {
 			return errMsg{err}
 		}
@@ -937,9 +972,9 @@ func (m model) scrollToConfigField() model {
 	return m
 }
 
-func cmdSendToolResult(agent *Agent, callID, result string) tea.Cmd {
+func cmdSendToolResult(ctx context.Context, agent *Agent, callID, result string) tea.Cmd {
 	return func() tea.Msg {
-		resp, err := agent.SendToolResult(callID, result)
+		resp, err := agent.SendToolResult(ctx, callID, result)
 		if err != nil {
 			return errMsg{err}
 		}
@@ -947,10 +982,13 @@ func cmdSendToolResult(agent *Agent, callID, result string) tea.Cmd {
 	}
 }
 
-func cmdRunCommand(callID, command string) tea.Cmd {
+func cmdRunCommand(ctx context.Context, callID, command string) tea.Cmd {
 	return func() tea.Msg {
-		cmd := exec.Command("bash", "-c", command)
+		cmd := exec.CommandContext(ctx, "bash", "-c", command)
 		out, err := cmd.CombinedOutput()
+		if ctx.Err() != nil {
+			return commandResultMsg{callID: callID, cancelled: true}
+		}
 		return commandResultMsg{
 			callID: callID,
 			output: string(out),

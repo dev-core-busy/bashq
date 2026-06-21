@@ -161,6 +161,7 @@ Toggle with `Alt+S` or in `/config → SESSIONS`. The title bar shows a 💾 SES
 | `F1–F9` / `Alt+1–9` | Custom one-key shortcuts (configure in `/config`) |
 | `Tab` | Switch between profile list and settings in `/config` |
 | `/` | Open command autocomplete |
+| `Ctrl+C` | Cancel running LLM request or command |
 | `Ctrl+Q` | Save session and quit |
 
 ## Slash Commands
