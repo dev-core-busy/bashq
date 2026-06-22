@@ -51,7 +51,7 @@ func selfInstallToggle() (msg string, isErr bool) {
 
 	// Installieren — erst systemweit versuchen, dann ~/.local/bin
 	if err := os.Symlink(exe, systemTarget); err == nil {
-		return fmt.Sprintf("✓ %s → %s\n  von überall aufrufbar — auch nach go build sofort aktuell", systemTarget, exe), false
+		return fmt.Sprintf("✓ %s → %s\n  von überall aufrufbar", systemTarget, exe), false
 	}
 
 	// Fallback: ~/.local/bin
@@ -66,5 +66,5 @@ func selfInstallToggle() (msg string, isErr bool) {
 	if !strings.Contains(os.Getenv("PATH"), localBinDir) {
 		return fmt.Sprintf("✓ %s → %s\n  ⚠ ~/.local/bin ist nicht im PATH:\n    export PATH=\"$HOME/.local/bin:$PATH\"", userTarget, exe), false
 	}
-	return fmt.Sprintf("✓ %s → %s\n  von überall aufrufbar — auch nach go build sofort aktuell", userTarget, exe), false
+	return fmt.Sprintf("✓ %s → %s\n  von überall aufrufbar", userTarget, exe), false
 }
