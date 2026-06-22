@@ -363,7 +363,6 @@ func (m model) renderConfigContent() string {
 		modeVal = configAutoStyle.Render("⚡ " + L.ModeAuto)
 	}
 	sb.WriteString(m.renderConfigField(4, L.FieldMode, modeVal+dimStyle.Render("  "+L.ModeToggleHint), true))
-	sb.WriteString("\n")
 
 	// Feld 5: Kurzbefehl (selfInstall toggle)
 	installed := selfInstallIsInstalled()
