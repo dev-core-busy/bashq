@@ -248,6 +248,20 @@ func (m model) renderConfigBottom() string {
 		return label + "\n" + hints + "\n"
 	}
 	if m.cfgSection == 0 {
+		if m.profileSubSel >= 0 {
+			var hint1 string
+			if m.profileSubSel == 1 {
+				hint1 = "  " + hintKeyStyle.Render("↑↓") + hintStyle.Render(" "+L.ConfigNavLabel+"  ") +
+					hintKeyStyle.Render("Enter") + hintStyle.Render(" "+L.ConfigEditLabel+"  ") +
+					hintKeyStyle.Render("Space") + hintStyle.Render(" "+L.ProfileModelDiscover)
+			} else {
+				hint1 = "  " + hintKeyStyle.Render("↑↓") + hintStyle.Render(" "+L.ConfigNavLabel+"  ") +
+					hintKeyStyle.Render("Enter") + hintStyle.Render(" "+L.ConfigEditLabel)
+			}
+			hint2 := "  " + hintKeyStyle.Render("Tab") + hintStyle.Render(" "+L.ProfileTabSettings+"  ") +
+				hintKeyStyle.Render("Esc") + hintStyle.Render(" "+L.ConfigCloseLabel)
+			return hint1 + "\n" + hint2
+		}
 		hint1 := "  " + hintKeyStyle.Render("↑↓") + hintStyle.Render(" "+L.ConfigNavLabel+"  ") +
 			hintKeyStyle.Render("Enter") + hintStyle.Render(" aktivieren/hinzufügen  ") +
 			hintKeyStyle.Render("P") + hintStyle.Render(" "+L.ProfilePreferLabel+"  ") +
@@ -275,6 +289,11 @@ func (m model) renderEditPromptBottom() string {
 func (m model) renderDiscoverBottom() string {
 	switch m.discStep {
 	case discEnterHost:
+		if m.discEditProfile >= 0 && m.discErr != "" {
+			// Fehler bei Profil-Modellsuche: nur Esc anbieten
+			hint := "  " + hintKeyStyle.Render("Esc") + hintStyle.Render(" "+L.ConfigCancelLabel)
+			return hint + "\n"
+		}
 		label := hintStyle.Render("  "+L.DiscoveryInputLabel+": ") + m.input.View()
 		hint := "  " + hintKeyStyle.Render("Enter") + hintStyle.Render(" "+L.DiscoverySearchLabel+"  ") +
 			hintKeyStyle.Render("Esc") + hintStyle.Render(" "+L.ConfigCancelLabel)
@@ -310,7 +329,9 @@ func (m model) renderDiscoverContent() string {
 		if m.discErr != "" {
 			sb.WriteString(errorMsgStyle.Render("  ✗ "+m.discErr) + "\n\n")
 		}
-		sb.WriteString("  " + dimStyle.Render(L.DiscoveryInputHint) + "\n")
+		if m.discEditProfile < 0 {
+			sb.WriteString("  " + dimStyle.Render(L.DiscoveryInputHint) + "\n")
+		}
 
 	case discScanning:
 		sb.WriteString("  " + dimStyle.Render(L.DiscoveryScanPorts) + "\n")
@@ -354,7 +375,7 @@ func (m model) renderConfigContent() string {
 	sb.WriteString("  " + sectionStyle.Render(L.SectionProfiles) + "\n\n")
 	isProfileSec := m.cfgSection == 0
 	for i, p := range m.cfg.profiles {
-		sel := isProfileSec && m.profileSel == i
+		sel := isProfileSec && m.profileSel == i && m.profileSubSel == -1
 		cursor := "  "
 		lblStyle := configLabelStyle
 		if sel {
@@ -371,12 +392,24 @@ func (m model) renderConfigContent() string {
 		}
 		line := fmt.Sprintf("%-18s  %s", p.Name, dimStyle.Render(urlShort))
 		if m.cfg.activeProfileIdx == i {
-			line += dimStyle.Render(" "+L.ProfileActive)
+			line += dimStyle.Render(" " + L.ProfileActive)
 		}
 		if p.Preferred {
 			line += " " + preferredStyle.Render(L.ProfilePreferred)
 		}
 		sb.WriteString(cursor + lblStyle.Render(line) + "\n")
+
+		// Unterfelder (URL / Modell / API-Key) nur bei cfgSection==0 und ausgewähltem Profil
+		if isProfileSec && m.profileSel == i {
+			// URL
+			apiDisp := dimStyle.Render(L.FieldAPIKeyEmpty)
+			if p.APIKey != "" {
+				apiDisp = strings.Repeat("•", minInt(len(p.APIKey), 20))
+			}
+			sb.WriteString(m.renderProfileSubField(L.FieldEndpoint, p.BaseURL, 0, false))
+			sb.WriteString(m.renderProfileSubField(L.FieldModel, p.Model, 1, false))
+			sb.WriteString(m.renderProfileSubField(L.FieldAPIKey, apiDisp, 2, true))
+		}
 	}
 	// "Add"-Button
 	addSel := isProfileSec && m.profileSel == len(m.cfg.profiles)
@@ -388,31 +421,10 @@ func (m model) renderConfigContent() string {
 	}
 	sb.WriteString(addCursor + addStyle.Render(L.ProfileAddBtn) + "\n\n")
 
-	// VERBINDUNG / CONNECTION
-	sb.WriteString("  " + sectionStyle.Render(L.SectionConnection) + "\n\n")
-	if m.cfg.activeProfileIdx >= 0 && m.cfg.activeProfileIdx < len(m.cfg.profiles) {
-		p := m.cfg.profiles[m.cfg.activeProfileIdx]
-		profLine := configLabelStyle.Render(fmt.Sprintf("%-14s", L.FieldActiveProfile)) +
-			"  " + configValueSelectedStyle.Render(p.Name)
-		if p.Preferred {
-			profLine += "  " + dimStyle.Render(L.ProfilePreferred)
-		}
-		sb.WriteString("  " + profLine + "\n\n")
-	}
-	sb.WriteString(m.renderConfigField(0, L.FieldEndpoint, m.cfg.baseURL, false))
-	sb.WriteString(m.renderConfigField(1, L.FieldModel, m.cfg.model, false))
-
-	apiDisplay := dimStyle.Render(L.FieldAPIKeyEmpty)
-	if m.cfg.apiKey != "" {
-		apiDisplay = strings.Repeat("•", minInt(len(m.cfg.apiKey), 20))
-	}
-	sb.WriteString(m.renderConfigField(2, L.FieldAPIKey, apiDisplay, true))
-	sb.WriteString("\n")
-
-	// Einstellungen
+	// Einstellungen (nur in cfgSection==1 sichtbar)
 	sb.WriteString("  " + sectionStyle.Render(L.SectionAssistant) + "\n\n")
 
-	// Feld 3: Sprache (Toggle)
+	// Feld 0: Sprache (Toggle)
 	langDisplay := "Deutsch"
 	switch m.cfg.lang {
 	case "en":
@@ -420,24 +432,25 @@ func (m model) renderConfigContent() string {
 	case "zh":
 		langDisplay = "中文"
 	}
-	sb.WriteString(m.renderConfigField(3, L.FieldLang, langDisplay+" "+dimStyle.Render(L.ModeToggleHint), true))
+	sb.WriteString(m.renderConfigField(0, L.FieldLang, langDisplay+" "+dimStyle.Render(L.ModeToggleHint), true))
 
-	// Feld 4: Ausführmodus (Toggle)
+	// Feld 1: Ausführmodus (Toggle)
 	modeVal := configAskStyle.Render("🛡 " + L.ModeAsk)
 	if m.cfg.autoAllow {
 		modeVal = configAutoStyle.Render("⚡ " + L.ModeAuto)
 	}
-	sb.WriteString(m.renderConfigField(4, L.FieldMode, modeVal+dimStyle.Render("  "+L.ModeToggleHint), true))
+	sb.WriteString(m.renderConfigField(1, L.FieldMode, modeVal+dimStyle.Render("  "+L.ModeToggleHint), true))
+	sb.WriteString("\n")
 
-	// Feld 5: Kurzbefehl (selfInstall toggle)
+	// Feld 2: Kurzbefehl (selfInstall toggle)
 	installed := selfInstallIsInstalled()
 	installVal := configAskStyle.Render("○ " + L.ModeNotInstalled)
 	if installed {
 		installVal = configAutoStyle.Render("✓ " + L.ModeInstalled)
 	}
-	sb.WriteString(m.renderConfigField(5, L.FieldInstall, installVal+dimStyle.Render("  "+L.ModeToggleHint), true))
+	sb.WriteString(m.renderConfigField(2, L.FieldInstall, installVal+dimStyle.Render("  "+L.ModeToggleHint), true))
 
-	// Feld 6: Auto-Update (Cycle)
+	// Feld 3: Auto-Update (Cycle)
 	var updateVal string
 	switch m.cfg.autoUpdate {
 	case "auto":
@@ -447,24 +460,24 @@ func (m model) renderConfigContent() string {
 	default: // "ask"
 		updateVal = configAskStyle.Render("? " + L.ModeUpdateAsk)
 	}
-	sb.WriteString(m.renderConfigField(6, L.FieldAutoUpdate, updateVal+" "+dimStyle.Render(L.ModeToggleHint), true))
+	sb.WriteString(m.renderConfigField(3, L.FieldAutoUpdate, updateVal+" "+dimStyle.Render(L.ModeToggleHint), true))
 
-	// Feld 7: Sitzungen speichern (Toggle)
+	// Feld 4: Sitzungen speichern (Toggle)
 	sessVal := configAskStyle.Render(L.ModeSessionOff)
 	if m.cfg.saveSessions {
 		sessVal = configAutoStyle.Render(L.ModeSessionOn)
 	}
-	sb.WriteString(m.renderConfigField(7, L.FieldSession, sessVal+" "+dimStyle.Render(L.ModeToggleHint), true))
+	sb.WriteString(m.renderConfigField(4, L.FieldSession, sessVal+" "+dimStyle.Render(L.ModeToggleHint), true))
 	sb.WriteString("\n")
 
-	// Feld 8: System-Prompt
+	// Feld 5: System-Prompt
 	promptPreview := m.cfg.customPrompt
 	if promptPreview == "" {
 		promptPreview = L.FieldPromptEmpty
 	} else if len(promptPreview) > 40 {
 		promptPreview = promptPreview[:40] + "…"
 	}
-	sb.WriteString(m.renderConfigField(8, L.FieldPrompt, promptPreview, false))
+	sb.WriteString(m.renderConfigField(5, L.FieldPrompt, promptPreview, false))
 	sb.WriteString("\n")
 
 	// TASTENKÜRZEL / SHORTCUTS
@@ -474,17 +487,58 @@ func (m model) renderConfigContent() string {
 		if val == "" {
 			val = L.FieldShortcutEmpty
 		}
-		sb.WriteString(m.renderConfigField(9+i, fmt.Sprintf("F%d", i+1), val, false))
+		sb.WriteString(m.renderConfigField(6+i, fmt.Sprintf("F%d", i+1), val, false))
 	}
 	sb.WriteString("\n")
 
 	return sb.String()
 }
 
-// renderConfigField rendert eine Konfigurationszeile.
+// renderProfileSubField rendert ein Unterfeld (URL/Modell/API-Key) des ausgewählten Profils.
+// preStyled=true: value ist bereits mit Lipgloss formatiert (z.B. für API-Key als Punkte).
+func (m model) renderProfileSubField(label, value string, subIdx int, preStyled bool) string {
+	sel := m.profileSubSel == subIdx
+	editing := sel && m.configEditing
+
+	cursor := "    "
+	lblStyle := configLabelStyle
+	if sel {
+		cursor = "  " + configLabelSelectedStyle.Render("▶ ")
+		lblStyle = configLabelSelectedStyle
+	}
+
+	if editing {
+		return cursor + lblStyle.Render(fmt.Sprintf("%-14s", label)) +
+			"  " + configEditingStyle.Render(L.ConfigEditingBelow) + "\n"
+	}
+
+	maxVal := m.width - 26
+	if maxVal < 10 {
+		maxVal = 10
+	}
+
+	var valRendered string
+	if preStyled {
+		valRendered = value
+	} else {
+		v := value
+		if len(v) > maxVal {
+			v = v[:maxVal] + "…"
+		}
+		if sel {
+			valRendered = configValueSelectedStyle.Render(v)
+		} else {
+			valRendered = configValueStyle.Render(v)
+		}
+	}
+
+	return cursor + lblStyle.Render(fmt.Sprintf("%-14s", label)) + "  " + valRendered + "\n"
+}
+
+// renderConfigField rendert eine Konfigurationszeile (nur für cfgSection==1).
 // preStyled=true: value ist bereits mit Lipgloss formatiert.
 func (m model) renderConfigField(idx int, label, value string, preStyled bool) string {
-	sel := m.configSel == idx
+	sel := m.cfgSection == 1 && m.configSel == idx
 	editing := sel && m.configEditing
 
 	cursor := "  "

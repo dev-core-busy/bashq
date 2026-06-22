@@ -58,19 +58,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case discoveryResultMsg:
 		if m.state == stateDiscover {
 			if len(msg.models) == 0 {
-				// Profil-Modellsuche (Space): spezifischen Hinweis geben und zurück zur Config
 				if m.discEditProfile >= 0 {
+					// Modellsuche aus Profil-Unterfeld: Fehler im Discovery-View anzeigen,
+					// Esc führt dann direkt auf das API-Key-Unterfeld
 					p := m.cfg.profiles[m.discEditProfile]
 					isCloud := strings.HasPrefix(strings.ToLower(m.discHost), "https")
 					if isCloud && p.APIKey == "" {
-						m.addMessage(roleSystem, fmt.Sprintf(L.DiscoveryNeedsAPIKey, m.discHost))
+						m.discErr = fmt.Sprintf(L.DiscoveryNeedsAPIKey, m.discHost)
 					} else {
-						m.addMessage(roleSystem, fmt.Sprintf(L.DiscoveryNoneFmt, m.discHost))
+						m.discErr = fmt.Sprintf(L.DiscoveryNoneFmt, m.discHost)
 					}
-					return m.returnToConfig()
+					m.discStep = discEnterHost
+				} else {
+					m.discErr = fmt.Sprintf(L.DiscoveryNoneFmt, m.discHost)
+					m.discStep = discEnterHost
 				}
-				m.discErr = fmt.Sprintf(L.DiscoveryNoneFmt, m.discHost)
-				m.discStep = discEnterHost
 			} else {
 				m.discModels = msg.models
 				m.discStep = discPickModel
@@ -807,6 +809,11 @@ func (m model) handleDiscoverKey(msg tea.KeyMsg) (model, tea.Cmd) {
 	case discEnterHost:
 		switch msg.String() {
 		case "esc":
+			if m.discEditProfile >= 0 {
+				// Zurück zur Config, Cursor auf API-Key-Unterfeld positionieren
+				m.profileSel = m.discEditProfile
+				m.profileSubSel = 2
+			}
 			return m.returnToConfig()
 		case "enter":
 			host := strings.TrimSpace(m.input.Value())

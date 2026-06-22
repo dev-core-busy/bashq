@@ -90,18 +90,20 @@ type model struct {
 
 	// Konfiguration
 	cfg           appConfig
-	configSel     int  // 0=baseURL,1=model,2=apiKey,3=autoAllow,4=customPrompt,5-13=F1-F9
+	configSel     int  // 0=lang,1=autoAllow,2=install,3=autoUpdate,4=saveSessions,5=customPrompt,6-14=F1-F9
 	configEditing bool // einzeiliger Textmodus aktiv
 	cfgSection    int  // 0=Profile, 1=Einstellungen (in stateConfig)
 	profileSel    int  // Auswahl in Profilliste (cfgSection==0)
+	profileSubSel int  // -1=Profilzeile, 0=URL, 1=Modell, 2=API-Key (nur cfgSection==0)
 
 	// Profil-Discovery
-	discStep    discStepType
-	discHost    string
-	discModels  []foundModel
-	discErr     string
-	modelSel    int
-	tempProfile llmProfile
+	discStep        discStepType
+	discHost        string
+	discModels      []foundModel
+	discErr         string
+	modelSel        int
+	tempProfile     llmProfile
+	discEditProfile int // >=0: bestehendes Profil bearbeiten (Index), -1: neues Profil
 
 	pendingUpdate *updateInfo // gesetzt wenn Update verfügbar und autoUpdate=="ask"
 
@@ -150,13 +152,15 @@ func newModel() model {
 	ag.customPrompt = cfg.customPrompt
 
 	return model{
-		input:        ti,
-		promptEditor: te,
-		agent:        ag,
-		state:        stateIdle,
-		cfg:          cfg,
-		spinFrames:   []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"},
-		historyIdx:   -1,
+		input:           ti,
+		promptEditor:    te,
+		agent:           ag,
+		state:           stateIdle,
+		cfg:             cfg,
+		spinFrames:      []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"},
+		historyIdx:      -1,
+		profileSubSel:   -1,
+		discEditProfile: -1,
 	}
 }
 
@@ -275,8 +279,13 @@ func (m *model) bottomLines() int {
 		return 2 // hints
 	case stateDiscover:
 		switch m.discStep {
-		case discEnterHost, discEnterName:
+		case discEnterHost:
+			if m.discEditProfile >= 0 && m.discErr != "" {
+				return 2 // Fehlermeldung im View, nur Esc-Hint unten
+			}
 			return 3 // label+input, hint, trailing newline
+		case discEnterName:
+			return 3
 		default:
 			return 2 // spinner/nav + hint
 		}
@@ -369,31 +378,26 @@ func minInt(a, b int) int {
 }
 
 // configFieldLine berechnet die 0-basierte Zeilennummer des configSel-Felds i
-// im gerendereten Config-Inhalt. Wird für Viewport-Auto-Scroll genutzt.
+// im gerendereten Config-Inhalt (cfgSection==1 ohne Sub-Felder). Für Viewport-Auto-Scroll.
 func (m model) configFieldLine(i int) int {
 	nP := len(m.cfg.profiles)
-	hasActive := m.cfg.activeProfileIdx >= 0 && m.cfg.activeProfileIdx < nP
+	// Struktur (cfgSection==1): "\n"(1) + Profil-Header"\n\n"(2) + nP Profile + Add-Button"\n\n"(2) + Einstellungen-Header"\n\n"(2) → base = 7+nP
 	base := 7 + nP
-	if hasActive {
-		base += 2
-	}
 	switch {
-	case i <= 2:
-		return base + i
-	case i == 3: // Sprache
-		return base + 6
-	case i == 4: // Ausführmodus
+	case i == 0: // Sprache
+		return base + 0
+	case i == 1: // Ausführmodus
+		return base + 1
+	case i == 2: // Kurzbefehl
+		return base + 3
+	case i == 3: // Auto-Update
+		return base + 4
+	case i == 4: // Sitzungen
+		return base + 5
+	case i == 5: // System-Prompt
 		return base + 7
-	case i == 5: // Kurzbefehl
-		return base + 9
-	case i == 6: // Auto-Update
-		return base + 10
-	case i == 7: // Sitzungen
-		return base + 11
-	case i == 8: // System-Prompt
-		return base + 13
-	case i >= 9 && i <= 17: // F1–F9
-		return base + 17 + (i - 9)
+	case i >= 6 && i <= 14: // F1–F9
+		return base + 11 + (i - 6)
 	}
 	return 0
 }
