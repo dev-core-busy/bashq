@@ -71,6 +71,8 @@ var (
 	inputTextStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#eceff1"))
 
+	inputCursorStyle = lipgloss.NewStyle().Reverse(true)
+
 	placeholderStyle = lipgloss.NewStyle().
 				Foreground(colorDim)
 

@@ -245,6 +245,20 @@ func (m *model) recalcViewport() {
 	m.viewport.Width = m.width
 }
 
+// inputLineCount gibt zurück, wie viele Zeilen das Eingabefeld bei aktueller Terminalbreite belegt.
+func (m model) inputLineCount() int {
+	const promptWidth = 3
+	avail := m.width - promptWidth
+	if avail < 1 {
+		avail = 1
+	}
+	n := len([]rune(m.input.Value()))
+	if n == 0 {
+		return 1
+	}
+	return (n + avail - 1) / avail
+}
+
 // bottomLines gibt die Anzahl der Zeilen im unteren Bereich zurück.
 func (m *model) bottomLines() int {
 	switch m.state {
@@ -268,7 +282,7 @@ func (m *model) bottomLines() int {
 		}
 	}
 	// stateIdle
-	lines := 2
+	lines := 1 + m.inputLineCount() // Eingabe (1+) + Hinweiszeile
 	if m.showAC && len(m.filtered) > 0 {
 		visible := minInt(len(m.filtered), maxACVisible)
 		lines += visible

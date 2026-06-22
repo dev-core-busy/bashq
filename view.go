@@ -89,8 +89,73 @@ func (m model) renderBottom() string {
 	}
 }
 
+// renderInputWrapped rendert das Eingabefeld mit Zeilenumbruch bei Terminalbrei.
+func (m model) renderInputWrapped() string {
+	const promptStr = " > "
+	const promptWidth = 3
+
+	value := m.input.Value()
+	valueRunes := []rune(value)
+	cursorPos := m.input.Position()
+
+	avail := m.width - promptWidth
+	if avail < 1 {
+		avail = 1
+	}
+
+	if len(valueRunes) == 0 {
+		if m.input.Placeholder != "" {
+			phRunes := []rune(m.input.Placeholder)
+			if len(phRunes) > 0 {
+				return promptStyle.Render(promptStr) +
+					inputCursorStyle.Render(string(phRunes[:1])) +
+					placeholderStyle.Render(string(phRunes[1:]))
+			}
+		}
+		return promptStyle.Render(promptStr) + inputCursorStyle.Render(" ")
+	}
+
+	var chunks [][]rune
+	for i := 0; i < len(valueRunes); i += avail {
+		end := i + avail
+		if end > len(valueRunes) {
+			end = len(valueRunes)
+		}
+		chunks = append(chunks, valueRunes[i:end])
+	}
+
+	var lines []string
+	for i, chunk := range chunks {
+		pfx := "   "
+		if i == 0 {
+			pfx = promptStyle.Render(promptStr)
+		}
+		lineStart := i * avail
+		isLast := i == len(chunks)-1
+		onThisLine := (cursorPos >= lineStart && cursorPos < lineStart+len(chunk)) ||
+			(isLast && cursorPos == len(valueRunes))
+
+		var rendered string
+		if onThisLine {
+			col := cursorPos - lineStart
+			if col < len(chunk) {
+				rendered = pfx +
+					inputTextStyle.Render(string(chunk[:col])) +
+					inputCursorStyle.Render(string(chunk[col:col+1])) +
+					inputTextStyle.Render(string(chunk[col+1:]))
+			} else {
+				rendered = pfx + inputTextStyle.Render(string(chunk)) + inputCursorStyle.Render(" ")
+			}
+		} else {
+			rendered = pfx + inputTextStyle.Render(string(chunk))
+		}
+		lines = append(lines, rendered)
+	}
+	return strings.Join(lines, "\n")
+}
+
 func (m model) renderIdleBottom() string {
-	inputLine := m.input.View()
+	inputLine := m.renderInputWrapped()
 
 	if m.showAC && len(m.filtered) > 0 {
 		// Gleitendes Fenster: acSel ist immer in der sichtbaren Auswahl

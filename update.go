@@ -398,6 +398,7 @@ func (m model) handleIdleKey(msg tea.KeyMsg) (model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.input, cmd = m.input.Update(msg)
 	m.updateAC()
+	m.recalcViewport()
 	return m, cmd
 }
 
