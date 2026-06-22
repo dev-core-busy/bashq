@@ -344,49 +344,10 @@ func (m model) renderConfigContent() string {
 	sb.WriteString(m.renderConfigField(2, L.FieldAPIKey, apiDisplay, true))
 	sb.WriteString("\n")
 
-	// ASSISTENT / ASSISTANT
+	// Einstellungen
 	sb.WriteString("  " + sectionStyle.Render(L.SectionAssistant) + "\n\n")
 
-	// Feld 3: autoAllow (Toggle)
-	sel3 := m.configSel == 3
-	lblStyle := configLabelStyle
-	if sel3 {
-		lblStyle = configLabelSelectedStyle
-	}
-	cursor3 := "  "
-	if sel3 {
-		cursor3 = configLabelSelectedStyle.Render("▶ ")
-	}
-	modeVal := configAskStyle.Render("🛡 " + L.ModeAsk)
-	if m.cfg.autoAllow {
-		modeVal = configAutoStyle.Render("⚡ " + L.ModeAuto)
-	}
-	sb.WriteString(cursor3 + lblStyle.Render(fmt.Sprintf("%-14s", L.FieldMode)) +
-		"  " + modeVal + dimStyle.Render("  "+L.ModeToggleHint) + "\n\n")
-
-	// Feld 4: customPrompt
-	promptPreview := m.cfg.customPrompt
-	if promptPreview == "" {
-		promptPreview = L.FieldPromptEmpty
-	} else if len(promptPreview) > 40 {
-		promptPreview = promptPreview[:40] + "…"
-	}
-	sb.WriteString(m.renderConfigField(4, L.FieldPrompt, promptPreview, false))
-	sb.WriteString("\n")
-
-	// TASTENKÜRZEL / SHORTCUTS
-	sb.WriteString("  " + sectionStyle.Render(L.SectionShortcuts) + "\n\n")
-	for i := 0; i < 9; i++ {
-		val := m.cfg.shortcuts[i]
-		if val == "" {
-			val = L.FieldShortcutEmpty
-		}
-		sb.WriteString(m.renderConfigField(5+i, fmt.Sprintf("F%d", i+1), val, false))
-	}
-	sb.WriteString("\n")
-
-	// SPRACHE / LANGUAGE
-	sb.WriteString("  " + sectionStyle.Render(L.SectionLanguage) + "\n\n")
+	// Feld 3: Sprache (Toggle)
 	langDisplay := "Deutsch"
 	switch m.cfg.lang {
 	case "en":
@@ -394,20 +355,25 @@ func (m model) renderConfigContent() string {
 	case "zh":
 		langDisplay = "中文"
 	}
-	sb.WriteString(m.renderConfigField(14, L.FieldLang, langDisplay+" "+dimStyle.Render(L.ModeToggleHint), true))
-	sb.WriteString("\n")
+	sb.WriteString(m.renderConfigField(3, L.FieldLang, langDisplay+" "+dimStyle.Render(L.ModeToggleHint), true))
 
-	// SITZUNGEN / SESSIONS
-	sb.WriteString("  " + sectionStyle.Render(L.SectionSession) + "\n\n")
-	sessVal := configAskStyle.Render(L.ModeSessionOff)
-	if m.cfg.saveSessions {
-		sessVal = configAutoStyle.Render(L.ModeSessionOn)
+	// Feld 4: Ausführmodus (Toggle)
+	modeVal := configAskStyle.Render("🛡 " + L.ModeAsk)
+	if m.cfg.autoAllow {
+		modeVal = configAutoStyle.Render("⚡ " + L.ModeAuto)
 	}
-	sb.WriteString(m.renderConfigField(15, L.FieldSession, sessVal+" "+dimStyle.Render(L.ModeToggleHint), true))
+	sb.WriteString(m.renderConfigField(4, L.FieldMode, modeVal+dimStyle.Render("  "+L.ModeToggleHint), true))
 	sb.WriteString("\n")
 
-	// AUTO-UPDATE
-	sb.WriteString("  " + sectionStyle.Render(L.SectionUpdate) + "\n\n")
+	// Feld 5: Kurzbefehl (selfInstall toggle)
+	installed := selfInstallIsInstalled()
+	installVal := configAskStyle.Render("○ " + L.ModeNotInstalled)
+	if installed {
+		installVal = configAutoStyle.Render("✓ " + L.ModeInstalled)
+	}
+	sb.WriteString(m.renderConfigField(5, L.FieldInstall, installVal+dimStyle.Render("  "+L.ModeToggleHint), true))
+
+	// Feld 6: Auto-Update (Cycle)
 	var updateVal string
 	switch m.cfg.autoUpdate {
 	case "auto":
@@ -417,7 +383,35 @@ func (m model) renderConfigContent() string {
 	default: // "ask"
 		updateVal = configAskStyle.Render("? " + L.ModeUpdateAsk)
 	}
-	sb.WriteString(m.renderConfigField(16, L.FieldAutoUpdate, updateVal+" "+dimStyle.Render(L.ModeToggleHint), true))
+	sb.WriteString(m.renderConfigField(6, L.FieldAutoUpdate, updateVal+" "+dimStyle.Render(L.ModeToggleHint), true))
+
+	// Feld 7: Sitzungen speichern (Toggle)
+	sessVal := configAskStyle.Render(L.ModeSessionOff)
+	if m.cfg.saveSessions {
+		sessVal = configAutoStyle.Render(L.ModeSessionOn)
+	}
+	sb.WriteString(m.renderConfigField(7, L.FieldSession, sessVal+" "+dimStyle.Render(L.ModeToggleHint), true))
+	sb.WriteString("\n")
+
+	// Feld 8: System-Prompt
+	promptPreview := m.cfg.customPrompt
+	if promptPreview == "" {
+		promptPreview = L.FieldPromptEmpty
+	} else if len(promptPreview) > 40 {
+		promptPreview = promptPreview[:40] + "…"
+	}
+	sb.WriteString(m.renderConfigField(8, L.FieldPrompt, promptPreview, false))
+	sb.WriteString("\n")
+
+	// TASTENKÜRZEL / SHORTCUTS
+	sb.WriteString("  " + sectionStyle.Render(L.SectionShortcuts) + "\n\n")
+	for i := 0; i < 9; i++ {
+		val := m.cfg.shortcuts[i]
+		if val == "" {
+			val = L.FieldShortcutEmpty
+		}
+		sb.WriteString(m.renderConfigField(9+i, fmt.Sprintf("F%d", i+1), val, false))
+	}
 	sb.WriteString("\n")
 
 	return sb.String()

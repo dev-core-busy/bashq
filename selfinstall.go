@@ -7,6 +7,18 @@ import (
 	"strings"
 )
 
+// selfInstallIsInstalled prüft ob bashq als Symlink oder Datei im System-PATH installiert ist.
+func selfInstallIsInstalled() bool {
+	home, _ := os.UserHomeDir()
+	if _, err := os.Lstat("/usr/local/bin/bashq"); err == nil {
+		return true
+	}
+	if _, err := os.Lstat(filepath.Join(home, ".local/bin/bashq")); err == nil {
+		return true
+	}
+	return false
+}
+
 // selfInstallToggle erstellt oder entfernt einen Symlink auf die laufende Binary.
 // Symlink statt Kopie: der globale Aufruf zeigt immer auf die aktuelle Binary —
 // ein `go build` genügt, kein erneutes Installieren nötig.

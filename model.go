@@ -366,18 +366,20 @@ func (m model) configFieldLine(i int) int {
 	switch {
 	case i <= 2:
 		return base + i
-	case i == 3:
+	case i == 3: // Sprache
 		return base + 6
-	case i == 4:
-		return base + 8
-	case i >= 5 && i <= 13:
-		return base + 12 + (i - 5)
-	case i == 14:
-		return base + 24
-	case i == 15:
-		return base + 28
-	case i == 16:
-		return base + 32
+	case i == 4: // Ausführmodus
+		return base + 7
+	case i == 5: // Kurzbefehl
+		return base + 9
+	case i == 6: // Auto-Update
+		return base + 10
+	case i == 7: // Sitzungen
+		return base + 11
+	case i == 8: // System-Prompt
+		return base + 13
+	case i >= 9 && i <= 17: // F1–F9
+		return base + 17 + (i - 9)
 	}
 	return 0
 }
