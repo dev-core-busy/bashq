@@ -55,11 +55,16 @@ func discoverFromInput(input string) []foundModel {
 
 // probeURL probiert eine vollständige URL direkt, inkl. Fallbacks.
 func probeURL(rawURL string) []foundModel {
-	client := &http.Client{Timeout: 3 * time.Second}
+	return probeURLWithAuth(rawURL, "")
+}
+
+// probeURLWithAuth probiert eine vollständige URL inkl. optionalem API-Key.
+func probeURLWithAuth(rawURL, apiKey string) []foundModel {
+	client := &http.Client{Timeout: 5 * time.Second}
 	baseURL := strings.TrimRight(rawURL, "/")
 
 	// URL so nehmen wie eingegeben (z.B. http://host:port/v1)
-	if models := fetchOpenAIModels(client, baseURL); len(models) > 0 {
+	if models := fetchOpenAIModelsAuth(client, baseURL, apiKey); len(models) > 0 {
 		return toFoundModels(models, baseURL, rawURL)
 	}
 
@@ -72,12 +77,12 @@ func probeURL(rawURL string) []foundModel {
 
 	// Falls kein /v1 am Ende, noch mit /v1 versuchen
 	if !strings.HasSuffix(baseURL, "/v1") {
-		if models := fetchOpenAIModels(client, hostBase+"/v1"); len(models) > 0 {
+		if models := fetchOpenAIModelsAuth(client, hostBase+"/v1", apiKey); len(models) > 0 {
 			return toFoundModels(models, hostBase+"/v1", rawURL)
 		}
 	}
 
-	// Ollama native /api/tags
+	// Ollama native /api/tags (kein Auth nötig, lokal)
 	if models := fetchOllamaTags(client, hostBase); len(models) > 0 {
 		return toFoundModels(models, hostBase+"/v1", rawURL)
 	}
@@ -144,7 +149,18 @@ func tryPort(host string, port int) []foundModel {
 }
 
 func fetchOpenAIModels(client *http.Client, baseURL string) []string {
-	resp, err := client.Get(baseURL + "/models")
+	return fetchOpenAIModelsAuth(client, baseURL, "")
+}
+
+func fetchOpenAIModelsAuth(client *http.Client, baseURL, apiKey string) []string {
+	req, err := http.NewRequest("GET", baseURL+"/models", nil)
+	if err != nil {
+		return nil
+	}
+	if apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil
 	}

@@ -485,21 +485,21 @@ func (m model) handleConfigKey(msg tea.KeyMsg) (model, tea.Cmd) {
 	case " ":
 		if m.cfgSection == 0 {
 			if m.profileSubSel == 1 && m.profileSel < len(m.cfg.profiles) {
-				// Modell-Discovery für dieses Profil
+				// Modell-Discovery für dieses Profil (mit API-Key falls vorhanden)
 				p := m.cfg.profiles[m.profileSel]
-				url := p.BaseURL
-				if url == "" {
-					url = m.cfg.baseURL
+				baseURL := p.BaseURL
+				if baseURL == "" {
+					baseURL = m.cfg.baseURL
 				}
-				if url != "" {
+				if baseURL != "" {
 					m.discEditProfile = m.profileSel
-					m.discHost = url
+					m.discHost = baseURL
 					m.discErr = ""
 					m.discStep = discScanning
 					m.state = stateDiscover
 					m.recalcViewport()
 					m.viewport.SetContent(m.renderDiscoverContent())
-					return m, tea.Batch(cmdDiscover(url), tickCmd())
+					return m, tea.Batch(cmdDiscoverModels(baseURL, p.APIKey), tickCmd())
 				}
 			}
 		} else if m.cfgSection == 1 {
@@ -1230,6 +1230,13 @@ func cycleAutoUpdate(current string) string {
 func cmdDiscover(host string) tea.Cmd {
 	return func() tea.Msg {
 		return discoveryResultMsg{models: discoverFromInput(host)}
+	}
+}
+
+// cmdDiscoverModels sucht Modelle an einer bekannten URL (inkl. API-Key).
+func cmdDiscoverModels(baseURL, apiKey string) tea.Cmd {
+	return func() tea.Msg {
+		return discoveryResultMsg{models: probeURLWithAuth(baseURL, apiKey)}
 	}
 }
 
