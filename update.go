@@ -13,9 +13,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// configFieldCount: 0=baseURL, 1=model, 2=apiKey, 3=lang, 4=autoAllow, 5=install,
-// 6=autoUpdate, 7=saveSessions, 8=customPrompt, 9-17=F1-F9
-const configFieldCount = 18
+// configFieldCount: 0=lang, 1=autoAllow, 2=install, 3=autoUpdate, 4=saveSessions, 5=customPrompt, 6-14=F1-F9
+const configFieldCount = 15
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -416,12 +415,14 @@ func (m model) handleConfigKey(msg tea.KeyMsg) (model, tea.Cmd) {
 		m.configSel = 0
 		m.cfgSection = 0
 		m.profileSel = 0
+		m.profileSubSel = -1
 		m.input.Placeholder = L.InputPlaceholder
 		m.recalcViewport()
 		m.updateViewport()
 
 	case "tab":
 		m.cfgSection = 1 - m.cfgSection
+		m.profileSubSel = -1
 		n := len(m.cfg.profiles)
 		if m.cfgSection == 0 && m.profileSel > n {
 			m.profileSel = n
@@ -431,8 +432,16 @@ func (m model) handleConfigKey(msg tea.KeyMsg) (model, tea.Cmd) {
 
 	case "up":
 		if m.cfgSection == 0 {
-			if m.profileSel > 0 {
-				m.profileSel--
+			if m.profileSubSel >= 0 {
+				m.profileSubSel-- // 0→-1, 1→0, 2→1
+			} else {
+				// auf Profilzeile
+				if m.profileSel > 0 {
+					m.profileSel--
+					if m.profileSel < len(m.cfg.profiles) {
+						m.profileSubSel = 2 // API-Key des vorherigen Profils
+					}
+				}
 			}
 		} else {
 			if m.configSel > 0 {
@@ -446,9 +455,17 @@ func (m model) handleConfigKey(msg tea.KeyMsg) (model, tea.Cmd) {
 
 	case "down":
 		if m.cfgSection == 0 {
-			n := len(m.cfg.profiles)
-			if m.profileSel < n {
+			if m.profileSubSel == -1 {
+				if m.profileSel < len(m.cfg.profiles) {
+					m.profileSubSel = 0 // in URL-Unterfeld wechseln
+				}
+				// Add-Button: keine Unterfelder, nichts tun
+			} else if m.profileSubSel < 2 {
+				m.profileSubSel++
+			} else {
+				// profileSubSel==2 (API-Key): zum nächsten Profil
 				m.profileSel++
+				m.profileSubSel = -1
 			}
 		} else {
 			m.configSel = (m.configSel + 1) % configFieldCount
@@ -458,31 +475,53 @@ func (m model) handleConfigKey(msg tea.KeyMsg) (model, tea.Cmd) {
 
 	case "enter":
 		if m.cfgSection == 0 {
+			if m.profileSubSel >= 0 {
+				return m.activateProfileSubField()
+			}
 			return m.activateProfileEntry()
 		}
 		return m.activateConfigField()
 
 	case " ":
-		if m.cfgSection == 1 {
+		if m.cfgSection == 0 {
+			if m.profileSubSel == 1 && m.profileSel < len(m.cfg.profiles) {
+				// Modell-Discovery für dieses Profil
+				p := m.cfg.profiles[m.profileSel]
+				url := p.BaseURL
+				if url == "" {
+					url = m.cfg.baseURL
+				}
+				if url != "" {
+					m.discEditProfile = m.profileSel
+					m.discHost = url
+					m.discErr = ""
+					m.discStep = discScanning
+					m.state = stateDiscover
+					m.recalcViewport()
+					m.viewport.SetContent(m.renderDiscoverContent())
+					return m, tea.Batch(cmdDiscover(url), tickCmd())
+				}
+			}
+		} else if m.cfgSection == 1 {
 			switch m.configSel {
-			case 3:
+			case 0:
 				return m.cycleLang()
-			case 4:
+			case 1:
 				m.cfg.autoAllow = !m.cfg.autoAllow
 				m.viewport.SetContent(m.renderConfigContent())
-			case 5:
-				msg, isErr := selfInstallToggle()
+			case 2:
+				toggleMsg, isErr := selfInstallToggle()
 				if isErr {
-					m.addMessage(roleError, msg)
+					m.addMessage(roleError, toggleMsg)
 				} else {
-					m.addMessage(roleSystem, msg)
+					m.addMessage(roleSystem, toggleMsg)
 				}
 				m.viewport.SetContent(m.renderConfigContent())
-			case 6:
+			case 3:
 				m.cfg.autoUpdate = cycleAutoUpdate(m.cfg.autoUpdate)
 				saveConfig(m.cfg)
 				m.viewport.SetContent(m.renderConfigContent())
-			case 7:
+			case 4:
 				m.cfg.saveSessions = !m.cfg.saveSessions
 				saveConfig(m.cfg)
 				m.viewport.SetContent(m.renderConfigContent())
@@ -490,12 +529,12 @@ func (m model) handleConfigKey(msg tea.KeyMsg) (model, tea.Cmd) {
 		}
 
 	case "p", "P":
-		if m.cfgSection == 0 && m.profileSel < len(m.cfg.profiles) {
+		if m.cfgSection == 0 && m.profileSubSel == -1 && m.profileSel < len(m.cfg.profiles) {
 			return m.setPreferredProfile()
 		}
 
 	case "d", "D":
-		if m.cfgSection == 0 && m.profileSel < len(m.cfg.profiles) {
+		if m.cfgSection == 0 && m.profileSubSel == -1 && m.profileSel < len(m.cfg.profiles) {
 			return m.deleteProfile()
 		}
 	}
@@ -507,24 +546,12 @@ func (m model) handleConfigEditKey(msg tea.KeyMsg) (model, tea.Cmd) {
 	switch msg.String() {
 	case "enter":
 		value := strings.TrimSpace(m.input.Value())
-		switch {
-		case m.configSel == 0:
-			if value == "" {
-				value = defaultBaseURL
-			}
-			m.cfg.baseURL = value
-			m.agent.baseURL = value
-		case m.configSel == 1:
-			if value == "" {
-				value = defaultModel
-			}
-			m.cfg.model = value
-			m.agent.model = value
-		case m.configSel == 2: // API-Key darf leer sein
-			m.cfg.apiKey = value
-			m.agent.apiKey = value
-		case m.configSel >= 9 && m.configSel <= 17:
-			m.cfg.shortcuts[m.configSel-9] = value
+		if m.cfgSection == 0 {
+			return m.saveProfileSubField(value)
+		}
+		// cfgSection==1: nur Tastenkürzel sind Text-Felder
+		if m.configSel >= 6 && m.configSel <= 14 {
+			m.cfg.shortcuts[m.configSel-6] = value
 		}
 		m.configEditing = false
 		m.input.EchoMode = textinput.EchoNormal
@@ -551,33 +578,33 @@ func (m model) handleConfigEditKey(msg tea.KeyMsg) (model, tea.Cmd) {
 
 func (m model) activateConfigField() (model, tea.Cmd) {
 	switch m.configSel {
-	case 3: // Sprache – Toggle
+	case 0: // Sprache – Toggle
 		return m.cycleLang()
 
-	case 4: // Ausführmodus – Toggle
+	case 1: // Ausführmodus – Toggle
 		m.cfg.autoAllow = !m.cfg.autoAllow
 		m.viewport.SetContent(m.renderConfigContent())
 
-	case 5: // Kurzbefehl (selfInstall toggle)
-		msg, isErr := selfInstallToggle()
+	case 2: // Kurzbefehl (selfInstall toggle)
+		toggleMsg, isErr := selfInstallToggle()
 		if isErr {
-			m.addMessage(roleError, msg)
+			m.addMessage(roleError, toggleMsg)
 		} else {
-			m.addMessage(roleSystem, msg)
+			m.addMessage(roleSystem, toggleMsg)
 		}
 		m.viewport.SetContent(m.renderConfigContent())
 
-	case 6: // Auto-Update – Cycle
+	case 3: // Auto-Update – Cycle
 		m.cfg.autoUpdate = cycleAutoUpdate(m.cfg.autoUpdate)
 		saveConfig(m.cfg)
 		m.viewport.SetContent(m.renderConfigContent())
 
-	case 7: // Sitzungen – Toggle
+	case 4: // Sitzungen – Toggle
 		m.cfg.saveSessions = !m.cfg.saveSessions
 		saveConfig(m.cfg)
 		m.viewport.SetContent(m.renderConfigContent())
 
-	case 8: // System-Prompt → Textarea-Editor öffnen
+	case 5: // System-Prompt → Textarea-Editor öffnen
 		m.promptEditor.SetWidth(m.width)
 		m.promptEditor.SetHeight(m.promptEditorHeight())
 		m.promptEditor.SetValue(m.cfg.customPrompt)
@@ -585,19 +612,10 @@ func (m model) activateConfigField() (model, tea.Cmd) {
 		m.state = stateEditPrompt
 
 	default:
-		// Einzeiliges Text-Feld
+		// Einzeiliges Text-Feld (nur Tastenkürzel F1–F9)
 		var value string
-		switch {
-		case m.configSel == 0:
-			value = m.cfg.baseURL
-		case m.configSel == 1:
-			value = m.cfg.model
-		case m.configSel == 2:
-			value = m.cfg.apiKey
-			m.input.EchoMode = textinput.EchoPassword
-			m.input.EchoCharacter = '•'
-		case m.configSel >= 9 && m.configSel <= 17:
-			value = m.cfg.shortcuts[m.configSel-9]
+		if m.configSel >= 6 && m.configSel <= 14 {
+			value = m.cfg.shortcuts[m.configSel-6]
 		}
 		m.input.SetValue(value)
 		m.input.Placeholder = ""
@@ -662,6 +680,89 @@ func (m model) activateProfileEntry() (model, tea.Cmd) {
 	return m, nil
 }
 
+// activateProfileSubField öffnet das ausgewählte Unterfeld (URL/Modell/API-Key) eines Profils zur Bearbeitung.
+func (m model) activateProfileSubField() (model, tea.Cmd) {
+	if m.profileSel >= len(m.cfg.profiles) {
+		return m, nil
+	}
+	p := m.cfg.profiles[m.profileSel]
+
+	switch m.profileSubSel {
+	case 0: // URL
+		m.input.SetValue(p.BaseURL)
+	case 1: // Modell
+		m.input.SetValue(p.Model)
+	case 2: // API-Key
+		m.input.SetValue(p.APIKey)
+		m.input.EchoMode = textinput.EchoPassword
+		m.input.EchoCharacter = '•'
+	}
+	m.input.Placeholder = ""
+	m.input.CursorEnd()
+	m.configEditing = true
+	m.recalcViewport()
+	m.viewport.SetContent(m.renderConfigContent())
+	return m, nil
+}
+
+// saveProfileSubField speichert den bearbeiteten Wert des Profil-Unterfelds.
+// URL: falls IP/Hostname (kein http/https) → Autodiscover starten.
+func (m model) saveProfileSubField(value string) (model, tea.Cmd) {
+	m.configEditing = false
+	m.input.EchoMode = textinput.EchoNormal
+	m.input.SetValue("")
+	m.input.Placeholder = L.InputPlaceholder
+
+	if m.profileSel >= len(m.cfg.profiles) {
+		return m, nil
+	}
+
+	switch m.profileSubSel {
+	case 0: // URL
+		if value != "" && !strings.HasPrefix(strings.ToLower(value), "http") {
+			// IP oder Hostname → Autodiscover starten
+			m.discEditProfile = m.profileSel
+			m.discHost = value
+			m.discErr = ""
+			m.discStep = discScanning
+			m.state = stateDiscover
+			m.recalcViewport()
+			m.viewport.SetContent(m.renderDiscoverContent())
+			return m, tea.Batch(cmdDiscover(value), tickCmd())
+		}
+		if value == "" {
+			value = defaultBaseURL
+		}
+		m.cfg.profiles[m.profileSel].BaseURL = value
+		if m.cfg.activeProfileIdx == m.profileSel {
+			m.cfg.baseURL = value
+			m.agent.baseURL = value
+		}
+
+	case 1: // Modell
+		if value == "" {
+			value = defaultModel
+		}
+		m.cfg.profiles[m.profileSel].Model = value
+		if m.cfg.activeProfileIdx == m.profileSel {
+			m.cfg.model = value
+			m.agent.model = value
+		}
+
+	case 2: // API-Key (darf leer sein)
+		m.cfg.profiles[m.profileSel].APIKey = value
+		if m.cfg.activeProfileIdx == m.profileSel {
+			m.cfg.apiKey = value
+			m.agent.apiKey = value
+		}
+	}
+
+	saveConfig(m.cfg)
+	m.recalcViewport()
+	m.viewport.SetContent(m.renderConfigContent())
+	return m, nil
+}
+
 func (m model) setPreferredProfile() (model, tea.Cmd) {
 	for i := range m.cfg.profiles {
 		m.cfg.profiles[i].Preferred = (i == m.profileSel)
@@ -703,9 +804,34 @@ func (m model) handleDiscoverKey(msg tea.KeyMsg) (model, tea.Cmd) {
 			}
 			m.discHost = host
 			m.discErr = ""
-			m.discStep = discScanning
 			m.input.SetValue("")
 			m.input.Placeholder = L.InputPlaceholder
+
+			// Vollständige URL (http/https): kein Scan nötig, direkt weiter
+			if strings.HasPrefix(strings.ToLower(host), "http") {
+				m.tempProfile.BaseURL = host
+				if m.discEditProfile >= 0 {
+					// Bestehendes Profil aktualisieren
+					idx := m.discEditProfile
+					m.cfg.profiles[idx].BaseURL = host
+					if m.cfg.activeProfileIdx == idx {
+						m.cfg.baseURL = host
+						m.agent.baseURL = host
+					}
+					saveConfig(m.cfg)
+					m.profileSel = idx
+					m.profileSubSel = -1
+					return m.returnToConfig()
+				}
+				m.discStep = discEnterName
+				m.input.Placeholder = L.DiscoveryNamePlaceholder
+				m.input.Focus()
+				m.recalcViewport()
+				m.viewport.SetContent(m.renderDiscoverContent())
+				return m, nil
+			}
+
+			m.discStep = discScanning
 			m.recalcViewport()
 			m.viewport.SetContent(m.renderDiscoverContent())
 			return m, tea.Batch(cmdDiscover(host), tickCmd())
@@ -741,6 +867,24 @@ func (m model) handleDiscoverKey(msg tea.KeyMsg) (model, tea.Cmd) {
 			sel := m.discModels[m.modelSel]
 			m.tempProfile.BaseURL = sel.BaseURL
 			m.tempProfile.Model = sel.Name
+
+			if m.discEditProfile >= 0 {
+				// Bestehendes Profil aktualisieren
+				idx := m.discEditProfile
+				m.cfg.profiles[idx].BaseURL = sel.BaseURL
+				m.cfg.profiles[idx].Model = sel.Name
+				if m.cfg.activeProfileIdx == idx {
+					m.cfg.baseURL = sel.BaseURL
+					m.cfg.model = sel.Name
+					m.agent.baseURL = sel.BaseURL
+					m.agent.model = sel.Name
+				}
+				saveConfig(m.cfg)
+				m.profileSel = idx
+				m.profileSubSel = -1
+				return m.returnToConfig()
+			}
+
 			m.discStep = discEnterName
 			m.input.SetValue("")
 			m.input.Placeholder = L.DiscoveryNamePlaceholder
@@ -795,23 +939,28 @@ func (m model) handleDiscoverKey(msg tea.KeyMsg) (model, tea.Cmd) {
 }
 
 func (m model) returnToConfig() (model, tea.Cmd) {
+	m.discEditProfile = -1
 	m.state = stateConfig
 	m.recalcViewport()
 	m.viewport.SetContent(m.renderConfigContent())
 	return m, nil
 }
 
-// configFieldLabel gibt den Anzeigenamen des aktuell gewählten Feldes zurück.
+// configFieldLabel gibt den Anzeigenamen des aktuell bearbeiteten Feldes zurück.
 func (m model) configFieldLabel() string {
-	switch {
-	case m.configSel == 0:
-		return L.FieldEndpoint
-	case m.configSel == 1:
-		return L.FieldModel
-	case m.configSel == 2:
-		return L.FieldAPIKey
-	case m.configSel >= 9 && m.configSel <= 17:
-		return fmt.Sprintf("F%d", m.configSel-8)
+	if m.cfgSection == 0 {
+		switch m.profileSubSel {
+		case 0:
+			return L.FieldEndpoint
+		case 1:
+			return L.FieldModel
+		case 2:
+			return L.FieldAPIKey
+		}
+		return ""
+	}
+	if m.configSel >= 6 && m.configSel <= 14 {
+		return fmt.Sprintf("F%d", m.configSel-5)
 	}
 	return ""
 }
