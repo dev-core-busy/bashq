@@ -58,6 +58,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case discoveryResultMsg:
 		if m.state == stateDiscover {
 			if len(msg.models) == 0 {
+				// Profil-Modellsuche (Space): spezifischen Hinweis geben und zurück zur Config
+				if m.discEditProfile >= 0 {
+					p := m.cfg.profiles[m.discEditProfile]
+					isCloud := strings.HasPrefix(strings.ToLower(m.discHost), "https")
+					if isCloud && p.APIKey == "" {
+						m.addMessage(roleSystem, fmt.Sprintf(L.DiscoveryNeedsAPIKey, m.discHost))
+					} else {
+						m.addMessage(roleSystem, fmt.Sprintf(L.DiscoveryNoneFmt, m.discHost))
+					}
+					return m.returnToConfig()
+				}
 				m.discErr = fmt.Sprintf(L.DiscoveryNoneFmt, m.discHost)
 				m.discStep = discEnterHost
 			} else {

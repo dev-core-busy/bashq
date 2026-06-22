@@ -160,8 +160,9 @@ type UIStrings struct {
 	ProfileTabSettings string // "Tab: Einstellungen"
 	ProfileTabProfiles string // "Tab: Profile"
 	ProfilePreferLabel string // "bevorzugen"
-	ProfileDeleteLabel string // "löschen"
-	ProfileActivatedFmt string // "Profil '%s' aktiviert"
+	ProfileDeleteLabel   string // "löschen"
+	ProfileModelDiscover string // "Modelle suchen"
+	ProfileActivatedFmt  string // "Profil '%s' aktiviert"
 
 	// Discovery (stateDiscover)
 	DiscoveryTitle           string
@@ -171,6 +172,7 @@ type UIStrings struct {
 	DiscoveryScanFmt         string
 	DiscoveryScanPorts       string
 	DiscoveryNoneFmt         string
+	DiscoveryNeedsAPIKey     string
 	DiscoveryFoundFmt        string
 	DiscoveryNameLabel       string
 	DiscoveryNamePlaceholder string
@@ -280,8 +282,9 @@ var de = UIStrings{
 	ProfileTabSettings:  "Tab: Einstellungen",
 	ProfileTabProfiles:  "Tab: Profile",
 	ProfilePreferLabel:  "bevorzugen",
-	ProfileDeleteLabel:  "löschen",
-	ProfileActivatedFmt: "Profil '%s' aktiviert",
+	ProfileDeleteLabel:   "löschen",
+	ProfileModelDiscover: "Modelle suchen",
+	ProfileActivatedFmt:  "Profil '%s' aktiviert",
 
 	DiscoveryTitle:           "Neues LLM-Profil",
 	DiscoveryInputLabel:      "IP/Hostname",
@@ -290,6 +293,7 @@ var de = UIStrings{
 	DiscoveryScanFmt:         "Scanne %s …",
 	DiscoveryScanPorts:       "Ports: 11434  1234  8080  8000  9081  7860  5000  3000",
 	DiscoveryNoneFmt:         "Keine LLMs gefunden auf '%s'",
+	DiscoveryNeedsAPIKey:     "Keine Modelle gefunden auf '%s' – Cloud-APIs benötigen einen API-Key.\n  Bitte zuerst den API-Key im Profil eintragen, dann erneut suchen.",
 	DiscoveryFoundFmt:        "%d Modell(e) gefunden – ↑↓ navigieren, Enter auswählen",
 	DiscoveryNameLabel:       "Profilname",
 	DiscoveryNamePlaceholder: "(leer = Modellname als Name verwenden)",
@@ -510,8 +514,9 @@ var en = UIStrings{
 	ProfileTabSettings:  "Tab: Settings",
 	ProfileTabProfiles:  "Tab: Profiles",
 	ProfilePreferLabel:  "prefer",
-	ProfileDeleteLabel:  "delete",
-	ProfileActivatedFmt: "Profile '%s' activated",
+	ProfileDeleteLabel:   "delete",
+	ProfileModelDiscover: "Search models",
+	ProfileActivatedFmt:  "Profile '%s' activated",
 
 	DiscoveryTitle:           "New LLM Profile",
 	DiscoveryInputLabel:      "IP/Hostname",
@@ -520,6 +525,7 @@ var en = UIStrings{
 	DiscoveryScanFmt:         "Scanning %s …",
 	DiscoveryScanPorts:       "Ports: 11434  1234  8080  8000  9081  7860  5000  3000",
 	DiscoveryNoneFmt:         "No LLMs found on '%s'",
+	DiscoveryNeedsAPIKey:     "No models found on '%s' – cloud APIs require an API key.\n  Please enter the API key in the profile first, then search again.",
 	DiscoveryFoundFmt:        "%d model(s) found – ↑↓ navigate, Enter to select",
 	DiscoveryNameLabel:       "Profile name",
 	DiscoveryNamePlaceholder: "(empty = use model name)",
@@ -739,8 +745,9 @@ var zh = UIStrings{
 	ProfileTabSettings:  "Tab: 设置",
 	ProfileTabProfiles:  "Tab: 配置文件",
 	ProfilePreferLabel:  "首选",
-	ProfileDeleteLabel:  "删除",
-	ProfileActivatedFmt: "配置文件 '%s' 已激活",
+	ProfileDeleteLabel:   "删除",
+	ProfileModelDiscover: "搜索模型",
+	ProfileActivatedFmt:  "配置文件 '%s' 已激活",
 
 	DiscoveryTitle:           "新建 LLM 配置文件",
 	DiscoveryInputLabel:      "IP/主机名",
@@ -749,6 +756,7 @@ var zh = UIStrings{
 	DiscoveryScanFmt:         "正在扫描 %s …",
 	DiscoveryScanPorts:       "端口: 11434  1234  8080  8000  9081  7860  5000  3000",
 	DiscoveryNoneFmt:         "在 '%s' 上未找到 LLM",
+	DiscoveryNeedsAPIKey:     "在 '%s' 上未找到模型 – 云端 API 需要 API 密钥。\n  请先在配置文件中填写 API 密钥，然后重新搜索。",
 	DiscoveryFoundFmt:        "找到 %d 个模型 – ↑↓ 导航，Enter 选择",
 	DiscoveryNameLabel:       "配置文件名称",
 	DiscoveryNamePlaceholder: "（空 = 使用模型名称）",
