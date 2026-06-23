@@ -25,6 +25,11 @@ func (m model) View() string {
 	divider := dividerStyle.Render(strings.Repeat("─", m.width))
 	bottom := m.renderBottom()
 
+	// Discover-View nutzt Fenstermodus: YOffset muss immer 0 sein
+	if m.state == stateDiscover {
+		m.viewport.SetYOffset(0)
+	}
+
 	var mid string
 	if m.state == stateEditPrompt {
 		mid = m.promptEditor.View()

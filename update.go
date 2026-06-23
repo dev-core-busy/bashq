@@ -449,7 +449,12 @@ func (m model) handleConfigKey(msg tea.KeyMsg) (model, tea.Cmd) {
 			m.profileSel = n
 		}
 		m.viewport.SetContent(m.renderConfigContent())
-		m = m.scrollToConfigField()
+		if m.cfgSection == 0 {
+			m.viewport.GotoTop()
+		} else {
+			m.configSel = 0
+			m = m.scrollToConfigField()
+		}
 
 	case "up":
 		if m.cfgSection == 0 {
