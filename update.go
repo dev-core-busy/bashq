@@ -1070,6 +1070,15 @@ func (m model) selectCommand(cmd SlashCommand) (model, tea.Cmd) {
 	m.input.SetValue("")
 	m.recalcViewport()
 
+	// Slash-Befehl in History aufnehmen (außer /exit)
+	if cmd.Action != actionExit {
+		if len(m.inputHistory) == 0 || m.inputHistory[len(m.inputHistory)-1] != cmd.Name {
+			m.inputHistory = append(m.inputHistory, cmd.Name)
+		}
+		m.historyIdx = -1
+		m.inputBeforeHistory = ""
+	}
+
 	switch cmd.Action {
 	case actionRun:
 		m.addMessage(roleUser, cmd.Name)
