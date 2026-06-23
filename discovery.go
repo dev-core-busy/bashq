@@ -94,6 +94,24 @@ func probeURLWithAuth(rawURL, apiKey string) ([]foundModel, bool) {
 	if models := fetchOllamaTags(client, hostBase); len(models) > 0 {
 		return toFoundModels(models, hostBase+"/v1", rawURL), false
 	}
+
+	// Google API Key Fallback: x-goog-api-key Header + ?key= Parameter
+	// (Google-APIs akzeptieren keinen einfachen Bearer-Token mit API-Key)
+	if apiKey != "" {
+		if models, af := fetchGoogleAPIKey(client, baseURL, apiKey); len(models) > 0 {
+			return toFoundModels(models, baseURL, rawURL), false
+		} else if af {
+			authFailed = true
+		}
+		if !strings.HasSuffix(baseURL, "/v1") {
+			if models, af := fetchGoogleAPIKey(client, hostBase+"/v1", apiKey); len(models) > 0 {
+				return toFoundModels(models, hostBase+"/v1", rawURL), false
+			} else if af {
+				authFailed = true
+			}
+		}
+	}
+
 	return nil, authFailed
 }
 
@@ -103,6 +121,71 @@ func toFoundModels(names []string, baseURL, source string) []foundModel {
 		result[i] = foundModel{Name: name, BaseURL: baseURL, Source: source}
 	}
 	return result
+}
+
+// fetchGoogleAPIKey probiert Google-spezifische API-Key-Authentifizierung:
+// x-goog-api-key Header und ?key= Query-Parameter (kein Bearer).
+// Unterstützt OpenAI- und Gemini-Antwortformat.
+func fetchGoogleAPIKey(client *http.Client, baseURL, apiKey string) ([]string, bool) {
+	endpoint := baseURL + "/models?key=" + url.QueryEscape(apiKey)
+	req, err := http.NewRequest("GET", endpoint, nil)
+	if err != nil {
+		return nil, false
+	}
+	req.Header.Set("x-goog-api-key", apiKey)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, false
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 401 || resp.StatusCode == 403 {
+		return nil, true
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, false
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, false
+	}
+
+	// OpenAI-Format: {"data": [{"id": "..."}]}
+	var openaiData struct {
+		Data []struct {
+			ID string `json:"id"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(body, &openaiData); err == nil && len(openaiData.Data) > 0 {
+		out := make([]string, 0, len(openaiData.Data))
+		for _, d := range openaiData.Data {
+			if d.ID != "" {
+				out = append(out, d.ID)
+			}
+		}
+		return out, false
+	}
+
+	// Gemini/Vertex-Format: {"models": [{"name": "models/gemini-..."}]}
+	var geminiData struct {
+		Models []struct {
+			Name string `json:"name"`
+		} `json:"models"`
+	}
+	if err := json.Unmarshal(body, &geminiData); err == nil && len(geminiData.Models) > 0 {
+		out := make([]string, 0, len(geminiData.Models))
+		for _, m := range geminiData.Models {
+			name := strings.TrimPrefix(m.Name, "models/")
+			if name != "" {
+				out = append(out, name)
+			}
+		}
+		return out, false
+	}
+
+	return nil, false
 }
 
 // scanHost scannt alle commonPorts einer IP und gibt gefundene Modelle zurück.
