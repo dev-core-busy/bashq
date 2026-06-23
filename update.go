@@ -62,17 +62,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					// Modellsuche aus Profil-Unterfeld: Fehler im Discovery-View anzeigen,
 					// Esc führt dann direkt auf das API-Key-Unterfeld
 					p := m.cfg.profiles[m.discEditProfile]
-					isCloud := strings.HasPrefix(strings.ToLower(m.discHost), "https")
-					if isCloud && p.APIKey == "" {
+					if msg.authFailed && p.APIKey != "" {
+						// Key vorhanden, aber Server hat abgelehnt → Key prüfen
+						m.discErr = fmt.Sprintf(L.DiscoveryAuthFailed, m.discHost)
+					} else if msg.authFailed {
+						// Kein Key, Server verlangt Auth → Key eintragen
 						m.discErr = fmt.Sprintf(L.DiscoveryNeedsAPIKey, m.discHost)
 					} else {
 						m.discErr = fmt.Sprintf(L.DiscoveryNoneFmt, m.discHost)
 					}
-					m.discStep = discEnterHost
 				} else {
-					m.discErr = fmt.Sprintf(L.DiscoveryNoneFmt, m.discHost)
-					m.discStep = discEnterHost
+					// Manuelle Host-Eingabe
+					if msg.authFailed {
+						m.discErr = fmt.Sprintf(L.DiscoveryNeedsAPIKey, m.discHost)
+					} else {
+						m.discErr = fmt.Sprintf(L.DiscoveryNoneFmt, m.discHost)
+					}
 				}
+				m.discStep = discEnterHost
 			} else {
 				m.discModels = msg.models
 				m.discStep = discPickModel
@@ -1247,14 +1254,16 @@ func cycleAutoUpdate(current string) string {
 
 func cmdDiscover(host string) tea.Cmd {
 	return func() tea.Msg {
-		return discoveryResultMsg{models: discoverFromInput(host)}
+		models, authFailed := discoverFromInput(host)
+		return discoveryResultMsg{models: models, authFailed: authFailed}
 	}
 }
 
 // cmdDiscoverModels sucht Modelle an einer bekannten URL (inkl. API-Key).
 func cmdDiscoverModels(baseURL, apiKey string) tea.Cmd {
 	return func() tea.Msg {
-		return discoveryResultMsg{models: probeURLWithAuth(baseURL, apiKey)}
+		models, authFailed := probeURLWithAuth(baseURL, apiKey)
+		return discoveryResultMsg{models: models, authFailed: authFailed}
 	}
 }
 

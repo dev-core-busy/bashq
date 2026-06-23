@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -22,7 +23,8 @@ type foundModel struct {
 }
 
 type discoveryResultMsg struct {
-	models []foundModel
+	models     []foundModel
+	authFailed bool // Server antwortete mit 401/403
 }
 
 type healthCheckMsg struct {
@@ -36,10 +38,10 @@ type healthCheckMsg struct {
 //   - "http://host:port/v1"  → direkte Abfrage der URL
 //   - "host:port"            → nur diesen Port prüfen
 //   - "host"                 → vollständiger Portscan
-func discoverFromInput(input string) []foundModel {
+func discoverFromInput(input string) ([]foundModel, bool) {
 	input = strings.TrimSpace(input)
 	if input == "" {
-		return nil
+		return nil, false
 	}
 	if strings.HasPrefix(input, "http://") || strings.HasPrefix(input, "https://") {
 		return probeURL(input)
@@ -47,46 +49,52 @@ func discoverFromInput(input string) []foundModel {
 	if idx := strings.LastIndex(input, ":"); idx > 0 {
 		host := input[:idx]
 		if port, err := strconv.Atoi(input[idx+1:]); err == nil {
-			return tryPort(host, port)
+			return tryPort(host, port), false
 		}
 	}
-	return scanHost(input)
+	return scanHost(input), false
 }
 
 // probeURL probiert eine vollständige URL direkt, inkl. Fallbacks.
-func probeURL(rawURL string) []foundModel {
+func probeURL(rawURL string) ([]foundModel, bool) {
 	return probeURLWithAuth(rawURL, "")
 }
 
 // probeURLWithAuth probiert eine vollständige URL inkl. optionalem API-Key.
-func probeURLWithAuth(rawURL, apiKey string) []foundModel {
+// Gibt (models, authFailed) zurück; authFailed=true wenn Server 401/403 zurückschickt.
+func probeURLWithAuth(rawURL, apiKey string) ([]foundModel, bool) {
 	client := &http.Client{Timeout: 5 * time.Second}
 	baseURL := strings.TrimRight(rawURL, "/")
+	authFailed := false
 
 	// URL so nehmen wie eingegeben (z.B. http://host:port/v1)
-	if models := fetchOpenAIModelsAuth(client, baseURL, apiKey); len(models) > 0 {
-		return toFoundModels(models, baseURL, rawURL)
+	if models, af := fetchOpenAIModelsAuth(client, baseURL, apiKey); len(models) > 0 {
+		return toFoundModels(models, baseURL, rawURL), false
+	} else if af {
+		authFailed = true
 	}
 
 	// Host-Basis ermitteln (Schema + Host + Port ohne Pfad)
 	u, err := url.Parse(rawURL)
 	if err != nil {
-		return nil
+		return nil, authFailed
 	}
 	hostBase := u.Scheme + "://" + u.Host
 
 	// Falls kein /v1 am Ende, noch mit /v1 versuchen
 	if !strings.HasSuffix(baseURL, "/v1") {
-		if models := fetchOpenAIModelsAuth(client, hostBase+"/v1", apiKey); len(models) > 0 {
-			return toFoundModels(models, hostBase+"/v1", rawURL)
+		if models, af := fetchOpenAIModelsAuth(client, hostBase+"/v1", apiKey); len(models) > 0 {
+			return toFoundModels(models, hostBase+"/v1", rawURL), false
+		} else if af {
+			authFailed = true
 		}
 	}
 
 	// Ollama native /api/tags (kein Auth nötig, lokal)
 	if models := fetchOllamaTags(client, hostBase); len(models) > 0 {
-		return toFoundModels(models, hostBase+"/v1", rawURL)
+		return toFoundModels(models, hostBase+"/v1", rawURL), false
 	}
-	return nil
+	return nil, authFailed
 }
 
 func toFoundModels(names []string, baseURL, source string) []foundModel {
@@ -149,40 +157,75 @@ func tryPort(host string, port int) []foundModel {
 }
 
 func fetchOpenAIModels(client *http.Client, baseURL string) []string {
-	return fetchOpenAIModelsAuth(client, baseURL, "")
+	models, _ := fetchOpenAIModelsAuth(client, baseURL, "")
+	return models
 }
 
-func fetchOpenAIModelsAuth(client *http.Client, baseURL, apiKey string) []string {
+// fetchOpenAIModelsAuth ruft GET baseURL/models auf und unterstützt zwei Response-Formate:
+//   - OpenAI:  {"data": [{"id": "model-name"}]}
+//   - Gemini:  {"models": [{"name": "models/gemini-..."}]}
+//
+// Gibt (models, authFailed) zurück; authFailed=true bei HTTP 401/403.
+func fetchOpenAIModelsAuth(client *http.Client, baseURL, apiKey string) ([]string, bool) {
 	req, err := http.NewRequest("GET", baseURL+"/models", nil)
 	if err != nil {
-		return nil
+		return nil, false
 	}
 	if apiKey != "" {
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil
+		return nil, false
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil
+
+	if resp.StatusCode == 401 || resp.StatusCode == 403 {
+		return nil, true
 	}
-	var data struct {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, false
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, false
+	}
+
+	// OpenAI-Format: {"data": [{"id": "..."}]}
+	var openaiData struct {
 		Data []struct {
 			ID string `json:"id"`
 		} `json:"data"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return nil
-	}
-	out := make([]string, 0, len(data.Data))
-	for _, d := range data.Data {
-		if d.ID != "" {
-			out = append(out, d.ID)
+	if err := json.Unmarshal(body, &openaiData); err == nil && len(openaiData.Data) > 0 {
+		out := make([]string, 0, len(openaiData.Data))
+		for _, d := range openaiData.Data {
+			if d.ID != "" {
+				out = append(out, d.ID)
+			}
 		}
+		return out, false
 	}
-	return out
+
+	// Gemini/Vertex-Format: {"models": [{"name": "models/gemini-..."}]}
+	var geminiData struct {
+		Models []struct {
+			Name string `json:"name"`
+		} `json:"models"`
+	}
+	if err := json.Unmarshal(body, &geminiData); err == nil && len(geminiData.Models) > 0 {
+		out := make([]string, 0, len(geminiData.Models))
+		for _, m := range geminiData.Models {
+			name := strings.TrimPrefix(m.Name, "models/")
+			if name != "" {
+				out = append(out, name)
+			}
+		}
+		return out, false
+	}
+
+	return nil, false
 }
 
 func fetchOllamaTags(client *http.Client, baseHost string) []string {

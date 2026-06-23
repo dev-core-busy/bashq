@@ -173,6 +173,7 @@ type UIStrings struct {
 	DiscoveryScanPorts       string
 	DiscoveryNoneFmt         string
 	DiscoveryNeedsAPIKey     string
+	DiscoveryAuthFailed      string
 	DiscoveryFoundFmt        string
 	DiscoveryNameLabel       string
 	DiscoveryNamePlaceholder string
@@ -293,7 +294,8 @@ var de = UIStrings{
 	DiscoveryScanFmt:         "Scanne %s …",
 	DiscoveryScanPorts:       "Ports: 11434  1234  8080  8000  9081  7860  5000  3000",
 	DiscoveryNoneFmt:         "Keine LLMs gefunden auf '%s'",
-	DiscoveryNeedsAPIKey:     "Keine Modelle gefunden auf '%s' – Cloud-APIs benötigen einen API-Key.\n  Bitte zuerst den API-Key im Profil eintragen, dann erneut suchen.",
+	DiscoveryNeedsAPIKey:     "Server auf '%s' verlangt Authentifizierung – trage den API-Key im Profil ein und suche erneut.",
+	DiscoveryAuthFailed:      "Authentifizierung fehlgeschlagen auf '%s' – prüfe ob der API-Key korrekt ist.",
 	DiscoveryFoundFmt:        "%d Modell(e) gefunden – ↑↓ navigieren, Enter auswählen",
 	DiscoveryNameLabel:       "Profilname",
 	DiscoveryNamePlaceholder: "(leer = Modellname als Name verwenden)",
@@ -525,7 +527,8 @@ var en = UIStrings{
 	DiscoveryScanFmt:         "Scanning %s …",
 	DiscoveryScanPorts:       "Ports: 11434  1234  8080  8000  9081  7860  5000  3000",
 	DiscoveryNoneFmt:         "No LLMs found on '%s'",
-	DiscoveryNeedsAPIKey:     "No models found on '%s' – cloud APIs require an API key.\n  Please enter the API key in the profile first, then search again.",
+	DiscoveryNeedsAPIKey:     "Server at '%s' requires authentication – enter the API key in the profile and search again.",
+	DiscoveryAuthFailed:      "Authentication failed on '%s' – please check if the API key is correct.",
 	DiscoveryFoundFmt:        "%d model(s) found – ↑↓ navigate, Enter to select",
 	DiscoveryNameLabel:       "Profile name",
 	DiscoveryNamePlaceholder: "(empty = use model name)",
@@ -756,7 +759,8 @@ var zh = UIStrings{
 	DiscoveryScanFmt:         "正在扫描 %s …",
 	DiscoveryScanPorts:       "端口: 11434  1234  8080  8000  9081  7860  5000  3000",
 	DiscoveryNoneFmt:         "在 '%s' 上未找到 LLM",
-	DiscoveryNeedsAPIKey:     "在 '%s' 上未找到模型 – 云端 API 需要 API 密钥。\n  请先在配置文件中填写 API 密钥，然后重新搜索。",
+	DiscoveryNeedsAPIKey:     "'%s' 上的服务器需要认证 – 请在配置文件中填写 API 密钥后重新搜索。",
+	DiscoveryAuthFailed:      "在 '%s' 上认证失败 – 请检查 API 密钥是否正确。",
 	DiscoveryFoundFmt:        "找到 %d 个模型 – ↑↓ 导航，Enter 选择",
 	DiscoveryNameLabel:       "配置文件名称",
 	DiscoveryNamePlaceholder: "（空 = 使用模型名称）",
