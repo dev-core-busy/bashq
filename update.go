@@ -879,11 +879,13 @@ func (m model) handleDiscoverKey(msg tea.KeyMsg) (model, tea.Cmd) {
 			if m.modelSel > 0 {
 				m.modelSel--
 				m.viewport.SetContent(m.renderDiscoverContent())
+				m.scrollToModelSel()
 			}
 		case "down":
 			if m.modelSel < len(m.discModels)-1 {
 				m.modelSel++
 				m.viewport.SetContent(m.renderDiscoverContent())
+				m.scrollToModelSel()
 			}
 		case "enter":
 			if len(m.discModels) == 0 {
