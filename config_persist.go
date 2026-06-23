@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type savedProfile struct {
@@ -102,6 +103,17 @@ func loadConfig() appConfig {
 		}
 		if p.APIKey != "" {
 			cfg.apiKey = p.APIKey
+		}
+	}
+
+	// Migration: api.google.com/genai → richtiger OpenAI-kompatibler Gemini-Endpoint
+	const geminiOpenAIBase = "https://generativelanguage.googleapis.com/v1beta/openai"
+	for i, p := range cfg.profiles {
+		if strings.Contains(p.BaseURL, "api.google.com") {
+			cfg.profiles[i].BaseURL = geminiOpenAIBase
+			if cfg.activeProfileIdx == i {
+				cfg.baseURL = geminiOpenAIBase
+			}
 		}
 	}
 

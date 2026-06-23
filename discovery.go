@@ -113,12 +113,12 @@ func probeURLWithAuth(rawURL, apiKey string) ([]foundModel, bool) {
 	}
 
 	// Gemini-Fallback: bei Google-URLs immer die echte Gemini-Models-API befragen.
-	// api.google.com/genai/* und ähnliche Google-URLs leiten intern auf
-	// generativelanguage.googleapis.com weiter – direkte Abfrage nötig.
+	// Die native Gemini-API ist kein OpenAI-Endpoint – für Chat-Completions muss
+	// generativelanguage.googleapis.com/v1beta/openai als BaseURL gesetzt werden.
 	if apiKey != "" && strings.Contains(strings.ToLower(u.Host), "google") {
 		if models := fetchGeminiModels(apiKey); len(models) > 0 {
-			// rawURL als BaseURL beibehalten – wird für echte API-Calls genutzt
-			return toFoundModels(models, rawURL, rawURL), false
+			const geminiOpenAIBase = "https://generativelanguage.googleapis.com/v1beta/openai"
+			return toFoundModels(models, geminiOpenAIBase, rawURL), false
 		}
 	}
 
