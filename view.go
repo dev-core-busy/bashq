@@ -357,15 +357,23 @@ func (m model) renderDiscoverContent() string {
 		for i := m.discModelOffset; i < windowEnd; i++ {
 			fm := m.discModels[i]
 			sel := i == m.modelSel
-			maxN := m.width - 30
-			if maxN < 10 {
-				maxN = 10
+			// Source kürzen damit die Zeile nicht umbricht (Prefix=2, Separator=2)
+			const maxSrcRunes = 22
+			srcRunes := []rune(fm.Source)
+			source := fm.Source
+			if len(srcRunes) > maxSrcRunes {
+				source = "…" + string(srcRunes[len(srcRunes)-(maxSrcRunes-1):])
+			}
+			maxN := m.width - 4 - len([]rune(source))
+			if maxN < 8 {
+				maxN = 8
 			}
 			name := fm.Name
-			if len(name) > maxN {
-				name = name[:maxN] + "…"
+			nameRunes := []rune(name)
+			if len(nameRunes) > maxN {
+				name = string(nameRunes[:maxN-1]) + "…"
 			}
-			line := fmt.Sprintf("%-*s  %s", maxN, name, dimStyle.Render(fm.Source))
+			line := fmt.Sprintf("%-*s  %s", maxN, name, dimStyle.Render(source))
 			if sel {
 				sb.WriteString(configLabelSelectedStyle.Render("▶ "+line) + "\n")
 			} else {
