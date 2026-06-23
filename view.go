@@ -373,7 +373,7 @@ func (m model) renderDiscoverContent() string {
 			if len(nameRunes) > maxN {
 				name = string(nameRunes[:maxN-1]) + "…"
 			}
-			line := fmt.Sprintf("%-*s  %s", maxN, name, dimStyle.Render(source))
+			line := name + "  " + dimStyle.Render(source)
 			if sel {
 				sb.WriteString(configLabelSelectedStyle.Render("▶ "+line) + "\n")
 			} else {
@@ -434,6 +434,7 @@ func (m model) renderConfigContent() string {
 			sb.WriteString(m.renderProfileSubField(L.FieldEndpoint, p.BaseURL, 0, false))
 			sb.WriteString(m.renderProfileSubField(L.FieldModel, p.Model, 1, false))
 			sb.WriteString(m.renderProfileSubField(L.FieldAPIKey, apiDisp, 2, true))
+			sb.WriteString(m.renderProfileSubField(L.FieldProfileName, p.Name, 3, false))
 		}
 	}
 	// "Add"-Button

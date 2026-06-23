@@ -465,7 +465,7 @@ func (m model) handleConfigKey(msg tea.KeyMsg) (model, tea.Cmd) {
 				if m.profileSel > 0 {
 					m.profileSel--
 					if m.profileSel < len(m.cfg.profiles) {
-						m.profileSubSel = 2 // API-Key des vorherigen Profils
+						m.profileSubSel = 3 // letztes Unterfeld (Name) des vorherigen Profils
 					}
 				}
 			}
@@ -486,10 +486,10 @@ func (m model) handleConfigKey(msg tea.KeyMsg) (model, tea.Cmd) {
 					m.profileSubSel = 0 // in URL-Unterfeld wechseln
 				}
 				// Add-Button: keine Unterfelder, nichts tun
-			} else if m.profileSubSel < 2 {
+			} else if m.profileSubSel < 3 {
 				m.profileSubSel++
 			} else {
-				// profileSubSel==2 (API-Key): zum nächsten Profil
+				// profileSubSel==3 (Name): zum nächsten Profil
 				m.profileSel++
 				m.profileSubSel = -1
 			}
@@ -723,6 +723,8 @@ func (m model) activateProfileSubField() (model, tea.Cmd) {
 		m.input.SetValue(p.APIKey)
 		m.input.EchoMode = textinput.EchoPassword
 		m.input.EchoCharacter = '•'
+	case 3: // Name
+		m.input.SetValue(p.Name)
 	}
 	m.input.Placeholder = ""
 	m.input.CursorEnd()
@@ -781,6 +783,10 @@ func (m model) saveProfileSubField(value string) (model, tea.Cmd) {
 		if m.cfg.activeProfileIdx == m.profileSel {
 			m.cfg.apiKey = value
 			m.agent.apiKey = value
+		}
+	case 3: // Name
+		if value != "" {
+			m.cfg.profiles[m.profileSel].Name = value
 		}
 	}
 
@@ -993,6 +999,8 @@ func (m model) configFieldLabel() string {
 			return L.FieldModel
 		case 2:
 			return L.FieldAPIKey
+		case 3:
+			return L.FieldProfileName
 		}
 		return ""
 	}

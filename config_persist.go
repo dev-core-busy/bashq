@@ -104,6 +104,19 @@ func loadConfig() appConfig {
 			cfg.apiKey = p.APIKey
 		}
 	}
+
+	// Migration: kein Profil vorhanden → Standard-Profil aus globalen Einstellungen erstellen
+	if len(cfg.profiles) == 0 {
+		cfg.profiles = []llmProfile{{
+			Name:      "Standard",
+			BaseURL:   cfg.baseURL,
+			Model:     cfg.model,
+			APIKey:    cfg.apiKey,
+			Preferred: true,
+		}}
+		cfg.activeProfileIdx = 0
+	}
+
 	return cfg
 }
 

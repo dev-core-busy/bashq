@@ -84,6 +84,7 @@ type UIStrings struct {
 	FieldEndpoint      string
 	FieldModel         string
 	FieldAPIKey        string
+	FieldProfileName   string
 	FieldMode          string
 	FieldPrompt        string
 	FieldLang          string
@@ -310,6 +311,7 @@ var de = UIStrings{
 	FieldEndpoint:      "LLM-Endpunkt",
 	FieldModel:         "Modell",
 	FieldAPIKey:        "API-Key",
+	FieldProfileName:   "Name",
 	FieldMode:          "Ausführmodus",
 	FieldPrompt:        "System-Prompt",
 	FieldLang:           "Sprache",
@@ -543,6 +545,7 @@ var en = UIStrings{
 	FieldEndpoint:      "LLM Endpoint",
 	FieldModel:         "Model",
 	FieldAPIKey:        "API Key",
+	FieldProfileName:   "Name",
 	FieldMode:          "Exec mode",
 	FieldPrompt:        "System prompt",
 	FieldLang:           "Language",
@@ -775,6 +778,7 @@ var zh = UIStrings{
 	FieldEndpoint:      "LLM 端点",
 	FieldModel:         "模型",
 	FieldAPIKey:        "API 密钥",
+	FieldProfileName:   "名称",
 	FieldMode:          "执行模式",
 	FieldPrompt:        "系统提示词",
 	FieldLang:           "语言",
