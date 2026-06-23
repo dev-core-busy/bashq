@@ -39,6 +39,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case tea.MouseMsg:
+		switch msg.Button {
+		case tea.MouseButtonWheelDown:
+			m.viewport.LineDown(3)
+		case tea.MouseButtonWheelUp:
+			m.viewport.LineUp(3)
+		}
+		return m, nil
+
 	case agentResponseMsg:
 		return m.handleAgentResponse(msg.resp)
 
@@ -127,8 +136,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.updateViewport()
 			}
 		}
-		// nächste Prüfung in 30 Minuten einplanen
+		// Nächste Prüfung in 30 Minuten einplanen
 		if m.cfg.autoUpdate != "off" {
+			m.nextUpdateAt = time.Now().Add(30 * time.Minute)
 			return m, cmdScheduleUpdateCheck()
 		}
 		return m, nil
@@ -137,6 +147,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err != nil {
 			m.addMessage(roleError, fmt.Sprintf(L.MsgUpdateError, msg.err.Error()))
 			m.updateViewport()
+			// Kette nach Fehler weiterlaufen lassen
+			if m.cfg.autoUpdate != "off" {
+				m.nextUpdateAt = time.Now().Add(30 * time.Minute)
+				return m, cmdScheduleUpdateCheck()
+			}
 			return m, nil
 		}
 		if m.cfg.autoUpdate == "auto" {
@@ -144,8 +159,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			restartExecPath = msg.execPath
 			return m, tea.Quit
 		}
+		// ask-Modus: manuelles Update fertig — Kette neu starten
 		m.addMessage(roleSystem, fmt.Sprintf(L.MsgUpdateDone, msg.version))
 		m.updateViewport()
+		if m.cfg.autoUpdate != "off" {
+			m.nextUpdateAt = time.Now().Add(30 * time.Minute)
+			return m, cmdScheduleUpdateCheck()
+		}
 		return m, nil
 
 	case scheduleUpdateCheckMsg:

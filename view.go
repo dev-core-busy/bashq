@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/lipgloss"
 )
@@ -485,6 +486,18 @@ func (m model) renderConfigContent() string {
 		updateVal = dimStyle.Render("○ " + L.ModeUpdateOff)
 	default: // "ask"
 		updateVal = configAskStyle.Render("? " + L.ModeUpdateAsk)
+	}
+	if m.cfg.autoUpdate != "off" && !m.nextUpdateAt.IsZero() {
+		remaining := time.Until(m.nextUpdateAt)
+		var hint string
+		if remaining <= 0 {
+			hint = "prüft…"
+		} else if remaining < time.Minute {
+			hint = fmt.Sprintf("in %ds", int(remaining.Seconds()))
+		} else {
+			hint = fmt.Sprintf("in %dmin", int(remaining.Minutes()))
+		}
+		updateVal += dimStyle.Render("  " + hint)
 	}
 	sb.WriteString(m.renderConfigField(3, L.FieldAutoUpdate, updateVal+" "+dimStyle.Render(L.ModeToggleHint), true))
 

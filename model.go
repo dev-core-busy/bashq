@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -107,6 +108,7 @@ type model struct {
 	discEditProfile int // >=0: bestehendes Profil bearbeiten (Index), -1: neues Profil
 
 	pendingUpdate *updateInfo // gesetzt wenn Update verfügbar und autoUpdate=="ask"
+	nextUpdateAt  time.Time  // Zeitpunkt des nächsten geplanten Update-Checks
 
 	// Aktivitätsprotokoll
 	activities []activityEntry
@@ -177,7 +179,7 @@ func (m model) Init() tea.Cmd {
 		}
 	}
 	if m.cfg.autoUpdate != "off" {
-		cmds = append(cmds, cmdCheckUpdate(), cmdScheduleUpdateCheck())
+		cmds = append(cmds, cmdCheckUpdate()) // Chain: checkUpdate → scheduleUpdate → checkUpdate …
 	}
 	return tea.Batch(cmds...)
 }

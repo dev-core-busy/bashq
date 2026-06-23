@@ -51,9 +51,13 @@ func saveSession(messages []chatMessage, history []Message, inputHistory []strin
 		return
 	}
 
-	savedMsgs := make([]savedChatMessage, len(messages))
-	for i, m := range messages {
-		savedMsgs[i] = savedChatMessage{Role: int(m.role), Content: m.content}
+	// roleSystem (Health-Check, Session-Header, Update-Meldungen) nicht persistieren —
+	// sonst akkumulieren sich diese Nachrichten bei jedem Neustart.
+	var savedMsgs []savedChatMessage
+	for _, m := range messages {
+		if m.role != roleSystem {
+			savedMsgs = append(savedMsgs, savedChatMessage{Role: int(m.role), Content: m.content})
+		}
 	}
 
 	histJSON, err := json.Marshal(history)
