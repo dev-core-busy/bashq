@@ -338,7 +338,17 @@ func (m model) renderDiscoverContent() string {
 
 	case discPickModel:
 		sb.WriteString("  " + dimStyle.Render(fmt.Sprintf(L.DiscoveryFoundFmt, len(m.discModels))) + "\n\n")
-		for i, fm := range m.discModels {
+		const headerLines = 5
+		vis := m.viewport.Height - headerLines
+		if vis < 1 {
+			vis = 1
+		}
+		windowEnd := m.discModelOffset + vis
+		if windowEnd > len(m.discModels) {
+			windowEnd = len(m.discModels)
+		}
+		for i := m.discModelOffset; i < windowEnd; i++ {
+			fm := m.discModels[i]
 			sel := i == m.modelSel
 			maxN := m.width - 30
 			if maxN < 10 {

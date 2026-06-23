@@ -84,6 +84,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.discModels = msg.models
 				m.discStep = discPickModel
 				m.modelSel = 0
+				m.discModelOffset = 0
 			}
 			m.recalcViewport()
 			m.viewport.SetContent(m.renderDiscoverContent())
@@ -677,6 +678,7 @@ func (m model) activateProfileEntry() (model, tea.Cmd) {
 		m.discModels = nil
 		m.discErr = ""
 		m.modelSel = 0
+		m.discModelOffset = 0
 		m.tempProfile = llmProfile{}
 		m.input.SetValue("")
 		m.input.Placeholder = L.DiscoveryInputLabel + "…"
@@ -878,14 +880,14 @@ func (m model) handleDiscoverKey(msg tea.KeyMsg) (model, tea.Cmd) {
 		case "up":
 			if m.modelSel > 0 {
 				m.modelSel--
+				m.updateModelWindow()
 				m.viewport.SetContent(m.renderDiscoverContent())
-				m.scrollToModelSel()
 			}
 		case "down":
 			if m.modelSel < len(m.discModels)-1 {
 				m.modelSel++
+				m.updateModelWindow()
 				m.viewport.SetContent(m.renderDiscoverContent())
-				m.scrollToModelSel()
 			}
 		case "enter":
 			if len(m.discModels) == 0 {

@@ -102,6 +102,7 @@ type model struct {
 	discModels      []foundModel
 	discErr         string
 	modelSel        int
+	discModelOffset int // Schiebefenster-Start für Modellliste
 	tempProfile     llmProfile
 	discEditProfile int // >=0: bestehendes Profil bearbeiten (Index), -1: neues Profil
 
@@ -330,15 +331,17 @@ func (m *model) promptEditorHeight() int {
 	return h
 }
 
-// scrollToModelSel scrollt den Viewport so, dass die ausgewählte Modellzeile sichtbar ist.
-// Header im discPickModel-View: blank(1) + title+blank(2) + found+blank(2) = 5 Zeilen.
-func (m *model) scrollToModelSel() {
-	const header = 5
-	target := header + m.modelSel
-	if target < m.viewport.YOffset {
-		m.viewport.SetYOffset(target)
-	} else if target >= m.viewport.YOffset+m.viewport.Height {
-		m.viewport.SetYOffset(target - m.viewport.Height + 1)
+// updateModelWindow passt discModelOffset an, sodass modelSel im sichtbaren Fenster bleibt.
+func (m *model) updateModelWindow() {
+	const headerLines = 5 // blank + title+blank + found+blank
+	vis := m.viewport.Height - headerLines
+	if vis < 1 {
+		vis = 1
+	}
+	if m.modelSel < m.discModelOffset {
+		m.discModelOffset = m.modelSel
+	} else if m.modelSel >= m.discModelOffset+vis {
+		m.discModelOffset = m.modelSel - vis + 1
 	}
 }
 
