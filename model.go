@@ -172,7 +172,9 @@ func (m model) Init() tea.Cmd {
 	}
 	if m.cfg.activeProfileIdx >= 0 && m.cfg.activeProfileIdx < len(m.cfg.profiles) {
 		p := m.cfg.profiles[m.cfg.activeProfileIdx]
-		cmds = append(cmds, cmdHealthCheck(p.BaseURL, p.Name, m.cfg.profiles, m.cfg.activeProfileIdx))
+		if p.Name != "" {
+			cmds = append(cmds, cmdHealthCheck(p.BaseURL, p.Name, m.cfg.profiles, m.cfg.activeProfileIdx))
+		}
 	}
 	if m.cfg.autoUpdate != "off" {
 		cmds = append(cmds, cmdCheckUpdate(), cmdScheduleUpdateCheck())

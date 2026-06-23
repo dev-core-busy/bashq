@@ -940,6 +940,9 @@ func (m model) handleDiscoverKey(msg tea.KeyMsg) (model, tea.Cmd) {
 			if name == "" {
 				name = m.tempProfile.Model
 			}
+			if name == "" {
+				name = m.tempProfile.BaseURL
+			}
 			m.tempProfile.Name = name
 			m.cfg.profiles = append(m.cfg.profiles, m.tempProfile)
 			newIdx := len(m.cfg.profiles) - 1

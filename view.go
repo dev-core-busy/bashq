@@ -25,8 +25,10 @@ func (m model) View() string {
 	divider := dividerStyle.Render(strings.Repeat("─", m.width))
 	bottom := m.renderBottom()
 
-	// Discover-View nutzt Fenstermodus: YOffset muss immer 0 sein
+	// Discover-View: Content mit aktueller Viewport-Höhe frisch generieren,
+	// damit vis-Berechnung immer konsistent mit der angezeigten Höhe ist.
 	if m.state == stateDiscover {
+		m.viewport.SetContent(m.renderDiscoverContent())
 		m.viewport.SetYOffset(0)
 	}
 
