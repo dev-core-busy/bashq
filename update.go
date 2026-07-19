@@ -62,7 +62,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.agent.PopLastMessage()
 		// Retry anbieten wenn eine wiederholbare Anfrage vorliegt
-		if m.retryMsg != "" || m.retryIsToolResult {
+		if m.retryMsg != "" || m.retryIsToolResult || m.retryIsCompact {
 			m.canRetry = true
 		}
 		m.logActivity(actError, msg.err.Error())
@@ -1184,9 +1184,13 @@ func (m model) selectCommand(cmd SlashCommand) (model, tea.Cmd) {
 		m.messages = nil
 		m.agent.Reset()
 		m.canRetry = false
+		m.retryIsCompact = false
 		deleteSession()
 		m.updateViewport()
 	case actionCompact:
+		m.retryIsCompact = true
+		m.retryIsToolResult = false
+		m.retryMsg = ""
 		m.addMessage(roleSystem, L.MsgCompacting)
 		m.updateViewport()
 		m.state = stateLoading
@@ -1377,6 +1381,11 @@ func (m model) doRetry() (model, tea.Cmd) {
 	m.cancelFunc = cancel
 	if m.retryIsToolResult {
 		return m, tea.Batch(cmdSendToolResult(ctx, m.agent, m.retryToolID, m.retryToolOutput), tickCmd())
+	}
+	if m.retryIsCompact {
+		m.addMessage(roleSystem, L.MsgCompacting)
+		m.updateViewport()
+		return m, tea.Batch(cmdCompact(ctx, m.agent), tickCmd())
 	}
 	return m, tea.Batch(cmdSendMessage(ctx, m.agent, m.retryMsg), tickCmd())
 }

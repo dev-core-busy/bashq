@@ -129,11 +129,12 @@ type model struct {
 	inputBeforeHistory string   // gespeicherte Eingabe beim Einstieg in den History-Modus
 
 	// Retry bei LLM-Fehler
-	canRetry        bool
+	canRetry          bool
 	retryIsToolResult bool
-	retryMsg        string
-	retryToolID     string
-	retryToolOutput string
+	retryIsCompact    bool
+	retryMsg          string
+	retryToolID       string
+	retryToolOutput   string
 }
 
 func newModel() model {
