@@ -68,7 +68,6 @@ type commandResultMsg struct {
 	cancelled bool
 }
 type compactDoneMsg struct {
-	summary  string
 	msgCount int
 }
 type errMsg struct{ err error }

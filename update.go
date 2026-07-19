@@ -72,7 +72,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case compactDoneMsg:
 		m.state = stateIdle
-		m.addMessage(roleSystem, fmt.Sprintf(L.MsgCompactedFmt, msg.msgCount, msg.summary))
+		m.addMessage(roleSystem, fmt.Sprintf(L.MsgCompactedFmt, msg.msgCount))
 		m.updateViewport()
 		return m, nil
 
@@ -1366,7 +1366,7 @@ func cmdCompact(ctx context.Context, agent *Agent) tea.Cmd {
 			{Role: "user", Content: "[Gesprächszusammenfassung]\n" + summary},
 			{Role: "assistant", Content: "Zusammenfassung zur Kenntnis genommen."},
 		}
-		return compactDoneMsg{summary: summary, msgCount: histLen}
+		return compactDoneMsg{msgCount: histLen}
 	}
 }
 
