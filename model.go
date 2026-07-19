@@ -55,6 +55,7 @@ type appConfig struct {
 	activeProfileIdx int // -1 = kein Profil aktiv (manuelle Konfiguration)
 	saveSessions     bool
 	autoUpdate       string // "ask" | "auto" | "off"
+	llmTimeout       int    // Sekunden, 30–300, Standard 60
 }
 
 // --- Tea-Nachrichten ---
@@ -65,6 +66,10 @@ type commandResultMsg struct {
 	output    string
 	err       error
 	cancelled bool
+}
+type compactDoneMsg struct {
+	summary  string
+	msgCount int
 }
 type errMsg struct{ err error }
 type spinTickMsg struct{}
@@ -123,6 +128,13 @@ type model struct {
 	inputHistory       []string // gesendete Nutzernachrichten, neueste am Ende
 	historyIdx         int      // -1 = kein History-Modus; sonst Index in inputHistory
 	inputBeforeHistory string   // gespeicherte Eingabe beim Einstieg in den History-Modus
+
+	// Retry bei LLM-Fehler
+	canRetry        bool
+	retryIsToolResult bool
+	retryMsg        string
+	retryToolID     string
+	retryToolOutput string
 }
 
 func newModel() model {
@@ -153,6 +165,7 @@ func newModel() model {
 	ag.model = cfg.model
 	ag.apiKey = cfg.apiKey
 	ag.customPrompt = cfg.customPrompt
+	ag.SetTimeout(cfg.llmTimeout)
 
 	return model{
 		input:           ti,
@@ -413,10 +426,12 @@ func (m model) configFieldLine(i int) int {
 		return base + 4
 	case i == 4: // Sitzungen
 		return base + 5
-	case i == 5: // System-Prompt
-		return base + 7
-	case i >= 6 && i <= 14: // F1–F9
-		return base + 11 + (i - 6)
+	case i == 5: // Timeout (neu)
+		return base + 6
+	case i == 6: // System-Prompt
+		return base + 8
+	case i >= 7 && i <= 15: // F1–F9
+		return base + 12 + (i - 7)
 	}
 	return 0
 }

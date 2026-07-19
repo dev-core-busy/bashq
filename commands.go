@@ -7,7 +7,8 @@ type cmdAction int
 const (
 	actionRun          cmdAction = iota // Sofort als Nachricht an Agent senden
 	actionPrompt                        // Eingabefeld mit Prefix füllen
-	actionClear                         // Chat leeren
+	actionClearHistory                  // Chat und LLM-Verlauf leeren
+	actionCompact                       // LLM-Kontext komprimieren (Zusammenfassung)
 	actionExit                          // Beenden
 	actionHelp                          // Hilfe anzeigen
 	actionConfig                        // Konfigurationseditor öffnen
@@ -41,7 +42,8 @@ func getCommands() []SlashCommand {
 		{Name: "/colors", Description: L.CmdColorsDesc, Action: actionColors},
 		{Name: "/activities", Description: L.CmdActivitiesDesc, Action: actionActivities},
 		{Name: "/help", Description: L.CmdHelpDesc, Action: actionHelp},
-		{Name: "/clear", Description: L.CmdClearDesc, Action: actionClear},
+		{Name: "/clear-history", Description: L.CmdClearDesc, Action: actionClearHistory},
+		{Name: "/compact", Description: L.CmdCompactDesc, Action: actionCompact},
 		{Name: "/exit", Description: L.CmdExitDesc, Action: actionExit},
 	}
 }

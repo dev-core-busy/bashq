@@ -90,6 +90,8 @@ type UIStrings struct {
 	FieldLang          string
 	FieldSession       string // "Sitzungen speichern"
 	FieldAutoUpdate    string // "Auto-Update"
+	FieldTimeout       string // "LLM-Timeout"
+	FieldTimeoutHint   string // "s  (30–300)"
 
 	// Konfigurationswerte
 	FieldAPIKeyEmpty   string // "(leer – für lokale LLMs)"
@@ -128,6 +130,10 @@ type UIStrings struct {
 	MsgNoOutput       string // "(kein Output)"
 	MsgExitError      string // "⚠ Exit-Fehler: "
 	MsgToolRejected   string // Tool-Ablehnung an LLM
+	RetryHint         string // "↩ Nochmals · Esc: Verwerfen"
+	MsgCompacting     string // "Komprimiere Kontext…"
+	MsgCompactedFmt   string // "📦 %d Nachrichten → Zusammenfassung:\n  %s"
+	CompactPrompt     string // Summarization-Prompt ans LLM
 
 	// Chat-Bereich
 	WelcomeMsg             string
@@ -213,6 +219,7 @@ type UIStrings struct {
 	CmdActivitiesDesc string
 	CmdHelpDesc       string
 	CmdClearDesc      string
+	CmdCompactDesc    string
 	CmdExitDesc       string
 	HelpText          string
 }
@@ -317,6 +324,8 @@ var de = UIStrings{
 	FieldLang:           "Sprache",
 	FieldSession:        "Sitzungen speichern",
 	FieldAutoUpdate:     "Auto-Update",
+	FieldTimeout:        "LLM-Timeout",
+	FieldTimeoutHint:    "s  (30–300)",
 	FieldInstall:        "Kurzbefehl",
 	ModeInstalled:       "Installiert",
 	ModeNotInstalled:    "Nicht installiert",
@@ -352,6 +361,10 @@ var de = UIStrings{
 	MsgNoOutput:      "(kein Output)",
 	MsgExitError:     "⚠ Exit-Fehler: ",
 	MsgToolRejected:  "FEHLER: Der Benutzer hat die Ausführung abgelehnt.",
+	RetryHint:        "  ↩ Nochmals versuchen · Esc: Verwerfen",
+	MsgCompacting:    "📦 Komprimiere LLM-Kontext…",
+	MsgCompactedFmt:  "📦 Kontext komprimiert · %d Nachrichten\n\n  %s",
+	CompactPrompt:    "Fasse unsere bisherige Unterhaltung in 3–5 prägnanten Sätzen zusammen. Nenne alle wichtigen Befehle, Systemzustände und Erkenntnisse. Antworte ausschließlich mit der Zusammenfassung, ohne Einleitung oder Kommentar.",
 
 	WelcomeMsg:         "\n  bashq bereit – das Q-Kontinuum deines Terminals.\n  Stell mir eine Frage oder tippe / für verfügbare Befehle.\n",
 	LabelUser:          " Du ",
@@ -417,7 +430,8 @@ TOOL-NUTZUNG:
 	CmdColorsDesc:     "Terminal-Farben in ~/.bashrc einrichten",
 	CmdActivitiesDesc: "Aktivitätsprotokoll anzeigen",
 	CmdHelpDesc:       "Hilfe anzeigen",
-	CmdClearDesc:      "Chat-Verlauf leeren",
+	CmdClearDesc:      "Chat-Verlauf und LLM-Kontext leeren",
+	CmdCompactDesc:    "LLM-Kontext komprimieren (Zusammenfassung erstellen)",
 	CmdExitDesc:       "Programm beenden",
 
 	HelpText: `bashq – Hilfe
@@ -426,20 +440,23 @@ Schreibe auf Deutsch was du tun möchtest.
 Ich erkläre jeden Schritt und frage vor gefährlichen Aktionen nach.
 
 SLASH-BEFEHLE (tippe / für Autovervollständigung):
-  /install    – Software installieren
-  /remove     – Software entfernen
-  /update     – System aktualisieren
-  /status     – Systemstatus anzeigen
-  /disk       – Festplattennutzung
-  /memory     – Arbeitsspeicher
-  /network    – Netzwerkinformationen
-  /services   – Dienste verwalten
-  /logs       – Systemlogs
-  /optimize   – Optimierungstipps
-  /config     – Einstellungen (LLM, System-Prompt, Tastenkürzel, Sprache)
-  /activities – Aktivitätsprotokoll dieser Sitzung
-  /clear      – Chat leeren
-  /exit       – Beenden
+  /install       – Software installieren
+  /remove        – Software entfernen
+  /update        – System aktualisieren
+  /status        – Systemstatus anzeigen
+  /disk          – Festplattennutzung
+  /memory        – Arbeitsspeicher
+  /network       – Netzwerkinformationen
+  /services      – Dienste verwalten
+  /logs          – Systemlogs
+  /optimize      – Optimierungstipps
+  /config        – Einstellungen (LLM, System-Prompt, Tastenkürzel, Sprache)
+  /activities    – Aktivitätsprotokoll dieser Sitzung
+  /clear-history – Chat-Verlauf und LLM-Kontext vollständig leeren
+  /compact       – LLM-Kontext komprimieren: erstellt eine Zusammenfassung der
+                   bisherigen Unterhaltung und ersetzt damit den vollen Verlauf.
+                   Nützlich bei langen Sitzungen um das Kontextfenster zu entlasten.
+  /exit          – Beenden
 
 TASTENKÜRZEL:
   Enter       – Nachricht senden / Auswahl bestätigen
@@ -551,6 +568,8 @@ var en = UIStrings{
 	FieldLang:           "Language",
 	FieldSession:        "Save sessions",
 	FieldAutoUpdate:     "Auto-update",
+	FieldTimeout:        "LLM timeout",
+	FieldTimeoutHint:    "s  (30–300)",
 	FieldInstall:        "Shortcut cmd",
 	ModeInstalled:       "Installed",
 	ModeNotInstalled:    "Not installed",
@@ -585,6 +604,10 @@ var en = UIStrings{
 	MsgNoOutput:      "(no output)",
 	MsgExitError:     "⚠ Exit error: ",
 	MsgToolRejected:  "ERROR: The user rejected the execution.",
+	RetryHint:        "  ↩ Retry · Esc: Dismiss",
+	MsgCompacting:    "📦 Compressing LLM context…",
+	MsgCompactedFmt:  "📦 Context compacted · %d messages\n\n  %s",
+	CompactPrompt:    "Summarize our conversation so far in 3–5 concise sentences. Include all important commands, system states, and findings. Respond with the summary only, without any introduction or comment.",
 
 	WelcomeMsg:         "\n  bashq ready — the Q Continuum of your terminal.\n  Ask me anything or type / for available commands.\n",
 	LabelUser:          " You ",
@@ -650,7 +673,8 @@ TOOL USAGE:
 	CmdColorsDesc:     "Set up terminal colors in ~/.bashrc",
 	CmdActivitiesDesc: "Show activity log",
 	CmdHelpDesc:       "Show help",
-	CmdClearDesc:      "Clear chat history",
+	CmdClearDesc:      "Clear chat history and LLM context",
+	CmdCompactDesc:    "Compress LLM context (create summary)",
 	CmdExitDesc:       "Exit program",
 
 	HelpText: `bashq – Help
@@ -659,20 +683,23 @@ Write in English to tell me what you need.
 I explain every step and ask before dangerous actions.
 
 SLASH COMMANDS (type / for autocomplete):
-  /install    – Install software
-  /remove     – Remove software
-  /update     – Update system
-  /status     – Show system status
-  /disk       – Disk usage
-  /memory     – Memory usage
-  /network    – Network information
-  /services   – Manage services
-  /logs       – System logs
-  /optimize   – Optimization tips
-  /config     – Settings (LLM, system prompt, shortcuts, language)
-  /activities – Activity log for this session
-  /clear      – Clear chat
-  /exit       – Exit
+  /install       – Install software
+  /remove        – Remove software
+  /update        – Update system
+  /status        – Show system status
+  /disk          – Disk usage
+  /memory        – Memory usage
+  /network       – Network information
+  /services      – Manage services
+  /logs          – System logs
+  /optimize      – Optimization tips
+  /config        – Settings (LLM, system prompt, shortcuts, language)
+  /activities    – Activity log for this session
+  /clear-history – Fully clear chat history and LLM context
+  /compact       – Compress LLM context: creates a summary of the conversation
+                   and replaces the full history with it.
+                   Useful for long sessions to free up context window space.
+  /exit          – Exit
 
 KEYBOARD SHORTCUTS:
   Enter       – Send message / confirm selection
@@ -784,6 +811,8 @@ var zh = UIStrings{
 	FieldLang:           "语言",
 	FieldSession:        "保存会话",
 	FieldAutoUpdate:     "自动更新",
+	FieldTimeout:        "LLM 超时",
+	FieldTimeoutHint:    "秒  (30–300)",
 	FieldInstall:        "快捷命令",
 	ModeInstalled:       "已安装",
 	ModeNotInstalled:    "未安装",
@@ -818,6 +847,10 @@ var zh = UIStrings{
 	MsgNoOutput:      "（无输出）",
 	MsgExitError:     "⚠ 退出错误：",
 	MsgToolRejected:  "错误：用户拒绝了此操作。",
+	RetryHint:        "  ↩ 重试 · Esc：取消",
+	MsgCompacting:    "📦 正在压缩 LLM 上下文…",
+	MsgCompactedFmt:  "📦 上下文已压缩 · %d 条消息\n\n  %s",
+	CompactPrompt:    "请用3–5句话总结我们迄今为止的对话。包括所有重要的命令、系统状态和发现。只回复摘要，不需要介绍或评论。",
 
 	WelcomeMsg:         "\n  bashq 就绪 — 终端的 Q 连续体。\n  请提问或键入 / 查看可用命令。\n",
 	LabelUser:          " 你 ",
@@ -883,7 +916,8 @@ var zh = UIStrings{
 	CmdColorsDesc:     "配置终端颜色到 ~/.bashrc",
 	CmdActivitiesDesc: "显示活动日志",
 	CmdHelpDesc:       "显示帮助",
-	CmdClearDesc:      "清除聊天记录",
+	CmdClearDesc:      "清除聊天记录和 LLM 上下文",
+	CmdCompactDesc:    "压缩 LLM 上下文（创建摘要）",
 	CmdExitDesc:       "退出程序",
 
 	HelpText: `bashq – 帮助
@@ -892,20 +926,22 @@ var zh = UIStrings{
 我会解释每个步骤，并在危险操作前征求确认。
 
 斜杠命令（键入 / 自动补全）：
-  /install    – 安装软件
-  /remove     – 卸载软件
-  /update     – 更新系统
-  /status     – 显示系统状态
-  /disk       – 磁盘使用情况
-  /memory     – 内存使用情况
-  /network    – 网络信息
-  /services   – 管理服务
-  /logs       – 系统日志
-  /optimize   – 优化建议
-  /config     – 设置（LLM、系统提示词、快捷键、语言）
-  /activities – 本次会话的活动日志
-  /clear      – 清除聊天
-  /exit       – 退出
+  /install       – 安装软件
+  /remove        – 卸载软件
+  /update        – 更新系统
+  /status        – 显示系统状态
+  /disk          – 磁盘使用情况
+  /memory        – 内存使用情况
+  /network       – 网络信息
+  /services      – 管理服务
+  /logs          – 系统日志
+  /optimize      – 优化建议
+  /config        – 设置（LLM、系统提示词、快捷键、语言）
+  /activities    – 本次会话的活动日志
+  /clear-history – 完全清除聊天记录和 LLM 上下文
+  /compact       – 压缩 LLM 上下文：创建对话摘要并替换完整历史记录。
+                   适用于长会话，释放上下文窗口空间。
+  /exit          – 退出
 
 快捷键：
   Enter       – 发送消息 / 确认选择

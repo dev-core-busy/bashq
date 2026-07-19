@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,8 +14,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// configFieldCount: 0=lang, 1=autoAllow, 2=install, 3=autoUpdate, 4=saveSessions, 5=customPrompt, 6-14=F1-F9
-const configFieldCount = 15
+// configFieldCount: 0=lang, 1=autoAllow, 2=install, 3=autoUpdate, 4=saveSessions, 5=timeout, 6=customPrompt, 7-15=F1-F9
+const configFieldCount = 16
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -59,8 +60,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if errors.Is(msg.err, context.Canceled) {
 			return m, nil // Abbruch durch Ctrl+C — bereits im Handler behandelt
 		}
+		m.agent.PopLastMessage()
+		// Retry anbieten wenn eine wiederholbare Anfrage vorliegt
+		if m.retryMsg != "" || m.retryIsToolResult {
+			m.canRetry = true
+		}
 		m.logActivity(actError, msg.err.Error())
 		m.addMessage(roleError, msg.err.Error())
+		m.updateViewport()
+		return m, nil
+
+	case compactDoneMsg:
+		m.state = stateIdle
+		m.addMessage(roleSystem, fmt.Sprintf(L.MsgCompactedFmt, msg.msgCount, msg.summary))
 		m.updateViewport()
 		return m, nil
 
@@ -355,6 +367,12 @@ func (m model) handleConfirmKey(msg tea.KeyMsg) (model, tea.Cmd) {
 func (m model) handleIdleKey(msg tea.KeyMsg) (model, tea.Cmd) {
 	switch msg.String() {
 	case "esc":
+		if m.canRetry {
+			m.canRetry = false
+			m.recalcViewport()
+			m.updateViewport()
+			return m, nil
+		}
 		if m.pendingUpdate != nil {
 			m.pendingUpdate = nil
 		}
@@ -421,6 +439,9 @@ func (m model) handleIdleKey(msg tea.KeyMsg) (model, tea.Cmd) {
 		return m, nil
 
 	case "enter":
+		if m.canRetry && !m.showAC && m.input.Value() == "" {
+			return m.doRetry()
+		}
 		if m.showAC && len(m.filtered) > 0 {
 			return m.selectCommand(m.filtered[m.acSel])
 		}
@@ -437,6 +458,9 @@ func (m model) handleIdleKey(msg tea.KeyMsg) (model, tea.Cmd) {
 
 	var cmd tea.Cmd
 	m.input, cmd = m.input.Update(msg)
+	if m.canRetry && m.input.Value() != "" {
+		m.canRetry = false
+	}
 	m.updateAC()
 	m.recalcViewport()
 	return m, cmd
@@ -571,6 +595,20 @@ func (m model) handleConfigKey(msg tea.KeyMsg) (model, tea.Cmd) {
 				m.cfg.saveSessions = !m.cfg.saveSessions
 				saveConfig(m.cfg)
 				m.viewport.SetContent(m.renderConfigContent())
+			case 5: // Timeout – Cycle durch häufige Werte
+				timeoutVals := []int{30, 60, 90, 120, 180, 300}
+				cur := m.cfg.llmTimeout
+				next := 60
+				for i, v := range timeoutVals {
+					if v == cur {
+						next = timeoutVals[(i+1)%len(timeoutVals)]
+						break
+					}
+				}
+				m.cfg.llmTimeout = next
+				m.agent.SetTimeout(next)
+				saveConfig(m.cfg)
+				m.viewport.SetContent(m.renderConfigContent())
 			}
 		}
 
@@ -595,9 +633,20 @@ func (m model) handleConfigEditKey(msg tea.KeyMsg) (model, tea.Cmd) {
 		if m.cfgSection == 0 {
 			return m.saveProfileSubField(value)
 		}
-		// cfgSection==1: nur Tastenkürzel sind Text-Felder
-		if m.configSel >= 6 && m.configSel <= 14 {
-			m.cfg.shortcuts[m.configSel-6] = value
+		// cfgSection==1
+		switch {
+		case m.configSel == 5: // Timeout
+			n, err := strconv.Atoi(value)
+			if err != nil || n < 30 {
+				n = 30
+			} else if n > 300 {
+				n = 300
+			}
+			m.cfg.llmTimeout = n
+			m.agent.SetTimeout(n)
+			saveConfig(m.cfg)
+		case m.configSel >= 7 && m.configSel <= 15: // F1–F9
+			m.cfg.shortcuts[m.configSel-7] = value
 		}
 		m.configEditing = false
 		m.input.EchoMode = textinput.EchoNormal
@@ -650,7 +699,15 @@ func (m model) activateConfigField() (model, tea.Cmd) {
 		saveConfig(m.cfg)
 		m.viewport.SetContent(m.renderConfigContent())
 
-	case 5: // System-Prompt → Textarea-Editor öffnen
+	case 5: // Timeout – Texteingabe
+		m.input.SetValue(strconv.Itoa(m.cfg.llmTimeout))
+		m.input.Placeholder = ""
+		m.input.CursorEnd()
+		m.configEditing = true
+		m.recalcViewport()
+		m.viewport.SetContent(m.renderConfigContent())
+
+	case 6: // System-Prompt → Textarea-Editor öffnen
 		m.promptEditor.SetWidth(m.width)
 		m.promptEditor.SetHeight(m.promptEditorHeight())
 		m.promptEditor.SetValue(m.cfg.customPrompt)
@@ -658,10 +715,10 @@ func (m model) activateConfigField() (model, tea.Cmd) {
 		m.state = stateEditPrompt
 
 	default:
-		// Einzeiliges Text-Feld (nur Tastenkürzel F1–F9)
+		// Einzeiliges Text-Feld (nur Tastenkürzel F1–F9, jetzt Index 7-15)
 		var value string
-		if m.configSel >= 6 && m.configSel <= 14 {
-			value = m.cfg.shortcuts[m.configSel-6]
+		if m.configSel >= 7 && m.configSel <= 15 {
+			value = m.cfg.shortcuts[m.configSel-7]
 		}
 		m.input.SetValue(value)
 		m.input.Placeholder = ""
@@ -1088,6 +1145,9 @@ func (m model) submitInput() (model, tea.Cmd) {
 	m.logActivity(actUser, text)
 	m.updateViewport()
 	m.state = stateLoading
+	m.retryMsg = text
+	m.retryIsToolResult = false
+	m.canRetry = false
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancelFunc = cancel
 	return m, tea.Batch(cmdSendMessage(ctx, m.agent, text), tickCmd())
@@ -1099,8 +1159,8 @@ func (m model) selectCommand(cmd SlashCommand) (model, tea.Cmd) {
 	m.input.SetValue("")
 	m.recalcViewport()
 
-	// Slash-Befehl in History aufnehmen (außer /exit)
-	if cmd.Action != actionExit {
+	// Slash-Befehl in History aufnehmen (außer /exit und /compact)
+	if cmd.Action != actionExit && cmd.Action != actionCompact {
 		if len(m.inputHistory) == 0 || m.inputHistory[len(m.inputHistory)-1] != cmd.Name {
 			m.inputHistory = append(m.inputHistory, cmd.Name)
 		}
@@ -1120,11 +1180,19 @@ func (m model) selectCommand(cmd SlashCommand) (model, tea.Cmd) {
 	case actionPrompt:
 		m.input.SetValue(cmd.Prompt)
 		m.input.CursorEnd()
-	case actionClear:
+	case actionClearHistory:
 		m.messages = nil
 		m.agent.Reset()
+		m.canRetry = false
 		deleteSession()
 		m.updateViewport()
+	case actionCompact:
+		m.addMessage(roleSystem, L.MsgCompacting)
+		m.updateViewport()
+		m.state = stateLoading
+		ctx, cancel := context.WithCancel(context.Background())
+		m.cancelFunc = cancel
+		return m, tea.Batch(cmdCompact(ctx, m.agent), tickCmd())
 	case actionExit:
 		if m.cfg.saveSessions {
 			saveSession(m.messages, m.agent.history, m.inputHistory)
@@ -1234,6 +1302,10 @@ func (m model) handleCommandResult(msg commandResultMsg) (model, tea.Cmd) {
 	m.addMessage(roleSystem, output)
 	m.updateViewport()
 
+	m.retryIsToolResult = true
+	m.retryToolID = msg.callID
+	m.retryToolOutput = output
+	m.canRetry = false
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancelFunc = cancel
 	m.state = stateLoading
@@ -1275,6 +1347,38 @@ func cmdSendToolResult(ctx context.Context, agent *Agent, callID, result string)
 		}
 		return agentResponseMsg{resp}
 	}
+}
+
+func cmdCompact(ctx context.Context, agent *Agent) tea.Cmd {
+	return func() tea.Msg {
+		histLen := len(agent.history) - 1 // Anzahl Nachrichten ohne System-Prompt
+		resp, err := agent.SendMessage(ctx, L.CompactPrompt)
+		if err != nil {
+			return errMsg{err}
+		}
+		summary := resp.Text
+		if summary == "" {
+			summary = "Konversation wurde zusammengefasst."
+		}
+		// History auf Zusammenfassung reduzieren
+		agent.history = []Message{
+			{Role: "system", Content: ""},
+			{Role: "user", Content: "[Gesprächszusammenfassung]\n" + summary},
+			{Role: "assistant", Content: "Zusammenfassung zur Kenntnis genommen."},
+		}
+		return compactDoneMsg{summary: summary, msgCount: histLen}
+	}
+}
+
+func (m model) doRetry() (model, tea.Cmd) {
+	m.canRetry = false
+	m.state = stateLoading
+	ctx, cancel := context.WithCancel(context.Background())
+	m.cancelFunc = cancel
+	if m.retryIsToolResult {
+		return m, tea.Batch(cmdSendToolResult(ctx, m.agent, m.retryToolID, m.retryToolOutput), tickCmd())
+	}
+	return m, tea.Batch(cmdSendMessage(ctx, m.agent, m.retryMsg), tickCmd())
 }
 
 func cmdRunCommand(ctx context.Context, callID, command string) tea.Cmd {

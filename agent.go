@@ -122,8 +122,18 @@ func newAgent() *Agent {
 		baseURL:    defaultBaseURL,
 		model:      defaultModel,
 		history:    []Message{{Role: "system", Content: L.SystemPrompt}},
-		httpClient: &http.Client{Timeout: 120 * time.Second},
+		httpClient: &http.Client{Timeout: 60 * time.Second},
 	}
+}
+
+// SetTimeout setzt das HTTP-Timeout für LLM-Anfragen (30–300 Sekunden).
+func (a *Agent) SetTimeout(seconds int) {
+	if seconds < 30 {
+		seconds = 30
+	} else if seconds > 300 {
+		seconds = 300
+	}
+	a.httpClient = &http.Client{Timeout: time.Duration(seconds) * time.Second}
 }
 
 // SendMessage schickt eine Nutzernachricht und gibt die Antwort zurück

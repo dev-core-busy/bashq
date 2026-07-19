@@ -27,6 +27,7 @@ type savedConfig struct {
 	ActiveProfile int            `json:"active_profile"`
 	SaveSessions  *bool          `json:"save_sessions,omitempty"` // nil = default true
 	AutoUpdate    string         `json:"auto_update,omitempty"`   // "" = default "ask"
+	LLMTimeout    int            `json:"llm_timeout,omitempty"`   // 0 = default 60
 }
 
 func configFilePath() (string, error) {
@@ -46,6 +47,7 @@ func loadConfig() appConfig {
 		autoUpdate:       "ask",
 		lang:             detectSystemLang(),
 		activeProfileIdx: -1,
+		llmTimeout:       60,
 	}
 
 	path, err := configFilePath()
@@ -80,6 +82,9 @@ func loadConfig() appConfig {
 	}
 	if saved.Lang != "" {
 		cfg.lang = saved.Lang
+	}
+	if saved.LLMTimeout >= 30 && saved.LLMTimeout <= 300 {
+		cfg.llmTimeout = saved.LLMTimeout
 	}
 
 	cfg.profiles = make([]llmProfile, len(saved.Profiles))
@@ -167,6 +172,7 @@ func saveConfig(cfg appConfig) error {
 		ActiveProfile: activeIdx,
 		SaveSessions:  &saveSessions,
 		AutoUpdate:    cfg.autoUpdate,
+		LLMTimeout:    cfg.llmTimeout,
 	}, "", "  ")
 	if err != nil {
 		return err
