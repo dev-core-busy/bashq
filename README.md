@@ -181,7 +181,9 @@ Type `/` for autocomplete with descriptions.
 | `/config` | Open settings editor |
 | `/setup` | Install bashq system-wide (or remove — acts as a toggle) |
 | `/activities` | Show command history with timestamps |
-| `/clear` | Clear chat history and start fresh |
+| `/clear-history` | Wipe everything: chat, LLM context, `session.json`, `activities.log` |
+| `/clear-llm-context` | Drop the LLM context only — the chat stays on screen |
+| `/compact` | Replace the LLM context with a short summary |
 | `/help` | Show keyboard shortcuts and tips |
 
 ---

@@ -59,6 +59,12 @@ func saveSession(messages []chatMessage, history []Message, inputHistory []strin
 			savedMsgs = append(savedMsgs, savedChatMessage{Role: int(m.role), Content: m.content})
 		}
 	}
+	// Nichts Speicherbares übrig (z.B. direkt nach /clear-history): keine
+	// leere Sitzungsdatei zurücklassen.
+	if len(savedMsgs) == 0 {
+		os.Remove(path)
+		return
+	}
 
 	histJSON, err := json.Marshal(history)
 	if err != nil {

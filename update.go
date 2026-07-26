@@ -1181,11 +1181,28 @@ func (m model) selectCommand(cmd SlashCommand) (model, tea.Cmd) {
 		m.input.SetValue(cmd.Prompt)
 		m.input.CursorEnd()
 	case actionClearHistory:
+		// In-Memory-Zustand leeren …
 		m.messages = nil
+		m.agent.Reset()
+		m.activities = nil
+		m.inputHistory = nil
+		m.historyIdx = -1
+		m.inputBeforeHistory = ""
+		m.canRetry = false
+		m.retryIsCompact = false
+		// … und die zugehörigen Dateien auf Disk.
+		deleteSession()
+		clearActivityLog()
+		m.addMessage(roleSystem, L.MsgHistoryCleared)
+		m.updateViewport()
+	case actionClearLLM:
+		// Nur der LLM-Kontext wird verworfen, die Chat-Anzeige bleibt erhalten.
 		m.agent.Reset()
 		m.canRetry = false
 		m.retryIsCompact = false
-		deleteSession()
+		m.retryIsToolResult = false
+		m.retryMsg = ""
+		m.addMessage(roleSystem, L.MsgLLMCleared)
 		m.updateViewport()
 	case actionCompact:
 		m.retryIsCompact = true

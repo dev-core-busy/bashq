@@ -75,7 +75,17 @@ Im Titelbalken zeigt ein farbiger Badge den aktuellen Modus: **`[ Auto ]`** (gr�
 - Standardwerte: `defaultBaseURL` und `defaultModel` als Konstanten in `agent.go`
 - Zur Laufzeit änderbar über `/config` → werden in `appConfig` (model.go) und direkt in `Agent.baseURL` / `Agent.model` gesetzt
 - `Agent.history` hält den vollständigen Gesprächsverlauf inkl. Tool-Ergebnissen
-- `Agent.Reset()` leert die History (nur System-Prompt bleibt, ausgelöst durch `/clear`)
+- `Agent.Reset()` leert die History (nur System-Prompt bleibt)
+
+### Verlauf leeren
+
+| Befehl | Wirkung |
+|--------|---------|
+| `/clear-history` (`actionClearHistory`) | `m.messages`, `agent.Reset()`, `m.activities`, `m.inputHistory` **und** die Dateien `session.json` (`deleteSession()`) + `activities.log` (`clearActivityLog()`) |
+| `/clear-llm-context` (`actionClearLLM`) | nur `agent.Reset()` – die Chat-Anzeige bleibt erhalten, das LLM startet ohne Vorwissen |
+| `/compact` (`actionCompact`) | ersetzt die LLM-History durch eine vom LLM erzeugte Zusammenfassung |
+
+`saveSession()` löscht die Sitzungsdatei, wenn nach dem Herausfiltern der `roleSystem`-Nachrichten nichts übrig bleibt – sonst würde `/clear-history` beim Beenden eine leere `session.json` zurücklassen.
 - Qwen3-`<think>`-Tags werden in `cleanResponse()` automatisch entfernt
 - `Message.Content` ist `interface{}` um JSON `null` (Tool-Call-Antworten) und Strings zu unterstützen
 

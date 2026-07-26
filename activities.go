@@ -54,6 +54,13 @@ func appendActivityLog(e activityEntry) {
 	fmt.Fprintf(f, "[%s] %s  %s\n", e.ts.Format("2006-01-02 15:04:05"), kindStr, e.message)
 }
 
+// clearActivityLog löscht die Protokolldatei auf Disk (z.B. nach /clear-history).
+func clearActivityLog() {
+	if path, err := activityLogPath(); err == nil {
+		os.Remove(path)
+	}
+}
+
 func activityLogPath() (string, error) {
 	dir, err := os.UserConfigDir()
 	if err != nil {

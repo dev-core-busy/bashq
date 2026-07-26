@@ -180,7 +180,7 @@ func (m model) renderIdleBottom() string {
 
 		var lines []string
 		for i, cmd := range visible {
-			entry := fmt.Sprintf("%-14s", cmd.Name)
+			entry := fmt.Sprintf("%-18s", cmd.Name)
 			if cmd.Description != "" {
 				entry += "  " + acDescStyle.Render(cmd.Description)
 			}
