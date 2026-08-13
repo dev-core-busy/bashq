@@ -15,7 +15,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-const currentVersion = "v1.0.11"
+const currentVersion = "v1.0.12"
 const githubReleasesAPI = "https://api.github.com/repos/dev-core-busy/bashq/releases/latest"
 
 // compareVersions vergleicht zwei Versionen wie "v1.0.10" numerisch je Segment.
