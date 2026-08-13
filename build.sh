@@ -84,7 +84,9 @@ cp bashq-linux-amd64 bashq
 
 # Gegenprobe: trägt die Binary wirklich die erwartete Version?
 for f in bashq-linux-amd64 bashq-linux-arm64; do
-  if ! strings "$f" | grep -qxF "$VERSION"; then
+  # Kein -x: die Version steht in der Binary innerhalb eines größeren Blobs,
+  # nicht auf einer eigenen Zeile.
+  if ! strings "$f" | grep -qF "$VERSION"; then
     echo "✗ ${f} enthält ${VERSION} nicht – Build passt nicht zur Konstante." >&2
     exit 1
   fi
