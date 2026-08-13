@@ -28,6 +28,7 @@ type savedConfig struct {
 	SaveSessions  *bool          `json:"save_sessions,omitempty"` // nil = default true
 	AutoUpdate    string         `json:"auto_update,omitempty"`   // "" = default "ask"
 	LLMTimeout    int            `json:"llm_timeout,omitempty"`   // 0 = default 60
+	MouseTracking *bool          `json:"mouse_tracking,omitempty"` // nil = default true
 }
 
 func configFilePath() (string, error) {
@@ -48,6 +49,7 @@ func loadConfig() appConfig {
 		lang:             detectSystemLang(),
 		activeProfileIdx: -1,
 		llmTimeout:       60,
+		mouseTracking:    true,
 	}
 
 	path, err := configFilePath()
@@ -76,6 +78,9 @@ func loadConfig() appConfig {
 	cfg.shortcuts = saved.Shortcuts
 	if saved.SaveSessions != nil {
 		cfg.saveSessions = *saved.SaveSessions
+	}
+	if saved.MouseTracking != nil {
+		cfg.mouseTracking = *saved.MouseTracking
 	}
 	if saved.AutoUpdate != "" {
 		cfg.autoUpdate = saved.AutoUpdate
@@ -160,6 +165,7 @@ func saveConfig(cfg appConfig) error {
 		activeIdx = 0
 	}
 	saveSessions := cfg.saveSessions
+	mouseTracking := cfg.mouseTracking
 	data, err := json.MarshalIndent(savedConfig{
 		BaseURL:       cfg.baseURL,
 		Model:         cfg.model,
@@ -173,6 +179,7 @@ func saveConfig(cfg appConfig) error {
 		SaveSessions:  &saveSessions,
 		AutoUpdate:    cfg.autoUpdate,
 		LLMTimeout:    cfg.llmTimeout,
+		MouseTracking: &mouseTracking,
 	}, "", "  ")
 	if err != nil {
 		return err

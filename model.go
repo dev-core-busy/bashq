@@ -54,6 +54,7 @@ type appConfig struct {
 	profiles         []llmProfile
 	activeProfileIdx int // -1 = kein Profil aktiv (manuelle Konfiguration)
 	saveSessions     bool
+	mouseTracking    bool // true = Mausrad scrollt; false = Terminal-Auswahl/Rechtsklick
 	autoUpdate       string // "ask" | "auto" | "off"
 	llmTimeout       int    // Sekunden, 30–300, Standard 60
 }
@@ -182,6 +183,11 @@ func newModel() model {
 
 func (m model) Init() tea.Cmd {
 	cmds := []tea.Cmd{textinput.Blink}
+	// main.go startet mit aktivem Maus-Tracking; war es zuletzt abgeschaltet,
+	// hier wieder ausschalten damit Terminal-Auswahl und Rechtsklick greifen.
+	if !m.cfg.mouseTracking {
+		cmds = append(cmds, tea.DisableMouse)
+	}
 	if m.cfg.saveSessions {
 		cmds = append(cmds, cmdLoadSession())
 	}

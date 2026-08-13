@@ -135,6 +135,20 @@ var (
 				Bold(true).
 				Padding(0, 1)
 
+	// Maus-Tracking an: Mausrad scrollt
+	mouseBadgeOnStyle = lipgloss.NewStyle().
+				Background(lipgloss.Color("#4527a0")).
+				Foreground(lipgloss.Color("#ede7f6")).
+				Bold(true).
+				Padding(0, 1)
+
+	// Maus-Tracking aus: Terminal-Auswahl / Rechtsklick möglich
+	mouseBadgeOffStyle = lipgloss.NewStyle().
+				Background(lipgloss.Color("#37474f")).
+				Foreground(lipgloss.Color("#b0bec5")).
+				Bold(true).
+				Padding(0, 1)
+
 	// Bevorzugtes Profil (★ in Profilliste)
 	preferredStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#ffd54f")).

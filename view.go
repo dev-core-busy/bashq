@@ -58,7 +58,13 @@ func (m model) renderTitle() string {
 	} else {
 		sessBadge = sessionBadgeOffStyle.Render(L.BadgeSessionOff)
 	}
-	badgeWidth := lipgloss.Width(modeBadge) + lipgloss.Width(sessBadge)
+	var mouseBadge string
+	if m.cfg.mouseTracking {
+		mouseBadge = mouseBadgeOnStyle.Render(L.BadgeMouseOn)
+	} else {
+		mouseBadge = mouseBadgeOffStyle.Render(L.BadgeMouseOff)
+	}
+	badgeWidth := lipgloss.Width(modeBadge) + lipgloss.Width(mouseBadge) + lipgloss.Width(sessBadge)
 
 	var label string
 	switch m.state {
@@ -73,7 +79,7 @@ func (m model) renderTitle() string {
 		titleWidth = 0
 	}
 	titleText := "  " + label + "  " + currentVersion
-	return titleBarStyle.Width(titleWidth).Render(titleText) + modeBadge + sessBadge
+	return titleBarStyle.Width(titleWidth).Render(titleText) + modeBadge + mouseBadge + sessBadge
 }
 
 // --- Unterer Bereich ---

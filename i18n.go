@@ -110,6 +110,8 @@ type UIStrings struct {
 	ModeNotInstalled    string // "Nicht installiert"
 
 	// Titel-Badges
+	BadgeMouseOn    string // " MAUS "
+	BadgeMouseOff   string // " TEXT "
 	BadgeSessionOn  string // " SESSION "
 	BadgeSessionOff string // " SESSION "
 
@@ -121,6 +123,8 @@ type UIStrings struct {
 	MsgUpdateError      string // "⚠ Update fehlgeschlagen: %s"
 	MsgModeAuto       string // "⚡ Modus: Auto-Ausführen ..."
 	MsgModeAsk        string // "🛡 Modus: Fragen ..."
+	MsgMouseOn        string // "🖱 Mausrad scrollt …"
+	MsgMouseOff       string // "📋 Terminal-Auswahl aktiv …"
 	MsgSessionOn      string // "💾 Sitzungen werden gespeichert …"
 	MsgSessionOff     string // "🚫 Sitzungen werden nicht gespeichert …"
 	MsgShortcutEmpty  string // "F%d ist nicht belegt..."
@@ -345,6 +349,8 @@ var de = UIStrings{
 	ModeUpdateAuto:     "Automatisch",
 	ModeUpdateOff:      "Deaktiviert",
 
+	BadgeMouseOn:       " MAUS ",
+	BadgeMouseOff:      " TEXT ",
 	BadgeSessionOn:     " SESSION ",
 	BadgeSessionOff:    " SESSION ",
 
@@ -355,6 +361,8 @@ var de = UIStrings{
 	MsgUpdateError:       "⚠ Update fehlgeschlagen: %s",
 	MsgModeAuto:      "⚡ Modus: Auto-Ausführen (Befehle werden ohne Rückfrage ausgeführt)",
 	MsgModeAsk:       "🛡 Modus: Fragen (Befehle werden vor Ausführung bestätigt)",
+	MsgMouseOn:       "🖱 Mausrad scrollt · Rechtsklick geht an bashq (Alt+M zum Umschalten)",
+	MsgMouseOff:      "📋 Terminal-Auswahl, Rechtsklick-Menü und Mittelklick aktiv · Mausrad scrollt nicht (Alt+M)",
 	MsgSessionOn:     "💾 Sitzungen werden gespeichert (Alt+S zum Umschalten)",
 	MsgSessionOff:    "🚫 Sitzungen werden nicht gespeichert (Alt+S zum Umschalten)",
 	MsgShortcutEmpty: "F%d ist nicht belegt. Belegen über /config → Tastenkürzel.",
@@ -475,6 +483,7 @@ TASTENKÜRZEL:
   F1–F9       – Benutzerdefinierte Kürzel (in /config belegen)
   Shift+Tab   – Ausführmodus umschalten (Fragen ↔ Auto)
   Ctrl+V      – Aus der Zwischenablage einfügen
+  Alt+M       – Maus-Tracking umschalten (Mausrad ↔ Terminal-Auswahl)
   Esc         – Autovervollständigung schließen
   Ctrl+C      – Laufende Anfrage / Befehl abbrechen
   Ctrl+Q      – Beenden`,
@@ -597,6 +606,8 @@ var en = UIStrings{
 	ModeUpdateAsk:      "Ask",
 	ModeUpdateAuto:     "Auto",
 	ModeUpdateOff:      "Off",
+	BadgeMouseOn:       " MOUSE ",
+	BadgeMouseOff:      " TEXT ",
 	BadgeSessionOn:     " SESSION ",
 	BadgeSessionOff:    " SESSION ",
 
@@ -607,6 +618,8 @@ var en = UIStrings{
 	MsgUpdateError:       "⚠ Update failed: %s",
 	MsgModeAuto:      "⚡ Mode: Auto-execute (commands run without confirmation)",
 	MsgModeAsk:       "🛡 Mode: Ask (commands require confirmation before running)",
+	MsgMouseOn:       "🖱 Mouse wheel scrolls · right-click goes to bashq (Alt+M to toggle)",
+	MsgMouseOff:      "📋 Terminal selection, right-click menu and middle-click active · wheel does not scroll (Alt+M)",
 	MsgSessionOn:     "💾 Sessions will be saved (Alt+S to toggle)",
 	MsgSessionOff:    "🚫 Sessions will not be saved (Alt+S to toggle)",
 	MsgShortcutEmpty: "F%d is not assigned. Configure it in /config → Shortcuts.",
@@ -726,6 +739,7 @@ KEYBOARD SHORTCUTS:
   F1–F9       – Custom shortcuts (configure in /config)
   Shift+Tab   – Toggle execution mode (Ask ↔ Auto)
   Ctrl+V      – Paste from clipboard
+  Alt+M       – Toggle mouse tracking (wheel ↔ terminal selection)
   Esc         – Close autocomplete
   Ctrl+C      – Cancel running request / command
   Ctrl+Q      – Quit`,
@@ -848,6 +862,8 @@ var zh = UIStrings{
 	ModeUpdateAsk:      "询问",
 	ModeUpdateAuto:     "自动",
 	ModeUpdateOff:      "关闭",
+	BadgeMouseOn:       " 鼠标 ",
+	BadgeMouseOff:      " 文本 ",
 	BadgeSessionOn:     " SESSION ",
 	BadgeSessionOff:    " SESSION ",
 
@@ -858,6 +874,8 @@ var zh = UIStrings{
 	MsgUpdateError:       "⚠ 更新失败：%s",
 	MsgModeAuto:      "⚡ 模式：自动执行（命令无需确认直接运行）",
 	MsgModeAsk:       "🛡 模式：询问（执行命令前需要确认）",
+	MsgMouseOn:       "🖱 滚轮滚动 · 右键交给 bashq（Alt+M 切换）",
+	MsgMouseOff:      "📋 终端选择、右键菜单和中键可用 · 滚轮不滚动（Alt+M）",
 	MsgSessionOn:     "💾 会话将被保存（Alt+S 切换）",
 	MsgSessionOff:    "🚫 会话不会被保存（Alt+S 切换）",
 	MsgShortcutEmpty: "F%d 未设置。请在 /config → 快捷键 中配置。",
@@ -976,6 +994,7 @@ var zh = UIStrings{
   F1–F9       – 自定义快捷键（在 /config 中设置）
   Shift+Tab   – 切换执行模式（询问 ↔ 自动）
   Ctrl+V      – 从剪贴板粘贴
+  Alt+M       – 切换鼠标跟踪（滚轮 ↔ 终端选择）
   Esc         – 关闭自动补全
   Ctrl+C      – 取消当前请求 / 命令
   Ctrl+Q      – 退出`,

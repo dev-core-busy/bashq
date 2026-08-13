@@ -239,6 +239,34 @@ func (m model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
+	// Alt+M: Maus-Tracking umschalten.
+	// An:  Mausrad scrollt, aber das Terminal reicht Klicks an bashq durch.
+	// Aus: Terminal-Textauswahl, Rechtsklick-Menü und Mittelklick-Einfügen
+	//      funktionieren wieder wie gewohnt.
+	case "alt+m":
+		if m.state == stateExecuting {
+			return m, nil
+		}
+		m.cfg.mouseTracking = !m.cfg.mouseTracking
+		saveConfig(m.cfg)
+		var mouseCmd tea.Cmd
+		if m.cfg.mouseTracking {
+			mouseCmd = tea.EnableMouseCellMotion
+		} else {
+			mouseCmd = tea.DisableMouse
+		}
+		if m.state == stateConfig {
+			m.viewport.SetContent(m.renderConfigContent())
+		} else if m.state != stateEditPrompt {
+			if m.cfg.mouseTracking {
+				m.addMessage(roleSystem, L.MsgMouseOn)
+			} else {
+				m.addMessage(roleSystem, L.MsgMouseOff)
+			}
+			m.updateViewport()
+		}
+		return m, mouseCmd
+
 	// Shift+Tab: Ausführmodus global umschalten
 	case "shift+tab":
 		m.cfg.autoAllow = !m.cfg.autoAllow
