@@ -8,13 +8,54 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-const currentVersion = "v1.0.10"
+const currentVersion = "v1.0.11"
 const githubReleasesAPI = "https://api.github.com/repos/dev-core-busy/bashq/releases/latest"
+
+// compareVersions vergleicht zwei Versionen wie "v1.0.10" numerisch je Segment.
+// Rückgabe: -1 wenn a < b, 0 bei Gleichstand, 1 wenn a > b.
+//
+// Ein String-Vergleich reicht hier nicht: "v1.0.10" < "v1.0.9" wäre lexikalisch
+// wahr, weil '1' vor '9' kommt. Ein Client auf v1.0.9 hätte v1.0.10 nie geladen –
+// und umgekehrt galt v1.0.7 als neuer, was zu einem Downgrade führte.
+func compareVersions(a, b string) int {
+	segs := func(v string) []int {
+		parts := strings.Split(strings.TrimPrefix(strings.TrimSpace(v), "v"), ".")
+		nums := make([]int, len(parts))
+		for i, p := range parts {
+			// Suffixe wie "1-rc2" auf die führende Zahl reduzieren
+			end := 0
+			for end < len(p) && p[end] >= '0' && p[end] <= '9' {
+				end++
+			}
+			nums[i], _ = strconv.Atoi(p[:end])
+		}
+		return nums
+	}
+	as, bs := segs(a), segs(b)
+	for i := 0; i < len(as) || i < len(bs); i++ {
+		var av, bv int
+		if i < len(as) {
+			av = as[i]
+		}
+		if i < len(bs) {
+			bv = bs[i]
+		}
+		if av != bv {
+			if av < bv {
+				return -1
+			}
+			return 1
+		}
+	}
+	return 0
+}
 
 type updateInfo struct {
 	version     string
@@ -69,7 +110,7 @@ func cmdCheckUpdate() tea.Cmd {
 			return updateCheckMsg{err: err}
 		}
 
-		if release.TagName == "" || release.TagName <= currentVersion {
+		if release.TagName == "" || compareVersions(release.TagName, currentVersion) <= 0 {
 			return updateCheckMsg{} // bereits aktuell oder älter
 		}
 
