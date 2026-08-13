@@ -474,6 +474,7 @@ TASTENKÜRZEL:
   ↑ / ↓      – Liste navigieren / Chat scrollen
   F1–F9       – Benutzerdefinierte Kürzel (in /config belegen)
   Shift+Tab   – Ausführmodus umschalten (Fragen ↔ Auto)
+  Ctrl+V      – Aus der Zwischenablage einfügen
   Esc         – Autovervollständigung schließen
   Ctrl+C      – Laufende Anfrage / Befehl abbrechen
   Ctrl+Q      – Beenden`,
@@ -724,6 +725,7 @@ KEYBOARD SHORTCUTS:
   ↑ / ↓      – Navigate list / scroll chat
   F1–F9       – Custom shortcuts (configure in /config)
   Shift+Tab   – Toggle execution mode (Ask ↔ Auto)
+  Ctrl+V      – Paste from clipboard
   Esc         – Close autocomplete
   Ctrl+C      – Cancel running request / command
   Ctrl+Q      – Quit`,
@@ -973,6 +975,7 @@ var zh = UIStrings{
   ↑ / ↓      – 导航列表 / 滚动聊天
   F1–F9       – 自定义快捷键（在 /config 中设置）
   Shift+Tab   – 切换执行模式（询问 ↔ 自动）
+  Ctrl+V      – 从剪贴板粘贴
   Esc         – 关闭自动补全
   Ctrl+C      – 取消当前请求 / 命令
   Ctrl+Q      – 退出`,

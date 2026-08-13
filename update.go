@@ -438,6 +438,18 @@ func (m model) handleIdleKey(msg tea.KeyMsg) (model, tea.Cmd) {
 		}
 		return m, nil
 
+	case "ctrl+v":
+		text := flattenPaste(readClipboard())
+		if text == "" {
+			return m, nil
+		}
+		m.input.SetValue(m.input.Value() + text)
+		m.input.CursorEnd()
+		m.canRetry = false
+		m.updateAC()
+		m.recalcViewport()
+		return m, nil
+
 	case "enter":
 		if m.canRetry && !m.showAC && m.input.Value() == "" {
 			return m.doRetry()
@@ -663,6 +675,13 @@ func (m model) handleConfigEditKey(msg tea.KeyMsg) (model, tea.Cmd) {
 		m.input.Placeholder = L.InputPlaceholder
 		m.recalcViewport()
 		m.viewport.SetContent(m.renderConfigContent())
+		return m, nil
+
+	case "ctrl+v":
+		if text := flattenPaste(readClipboard()); text != "" {
+			m.input.SetValue(m.input.Value() + text)
+			m.input.CursorEnd()
+		}
 		return m, nil
 	}
 
@@ -1106,6 +1125,13 @@ func (m model) handleEditPromptKey(msg tea.KeyMsg) (model, tea.Cmd) {
 		m.state = stateConfig
 		m.recalcViewport()
 		m.viewport.SetContent(m.renderConfigContent())
+		return m, nil
+
+	case "ctrl+v":
+		// Mehrzeilig: Zeilenumbrüche bleiben im Textarea erhalten
+		if text := readClipboard(); text != "" {
+			m.promptEditor.InsertString(text)
+		}
 		return m, nil
 	}
 

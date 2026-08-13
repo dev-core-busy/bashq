@@ -148,7 +148,7 @@ func newModel() model {
 	ti.PromptStyle = promptStyle
 	ti.TextStyle = inputTextStyle
 	ti.PlaceholderStyle = placeholderStyle
-	ti.CharLimit = 512
+	ti.CharLimit = 4096
 	ti.Focus()
 
 	te := textarea.New()
