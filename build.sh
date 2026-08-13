@@ -93,9 +93,11 @@ for f in bashq-linux-amd64 bashq-linux-arm64; do
   echo "  ✓ ${f}  $(du -h "$f" | cut -f1)  ${VERSION}"
 done
 
-# Änderungsliste seit dem letzten Release
+# Änderungsliste seit dem letzten Release. Das Tag des Vorgängers legt
+# `gh release create` auf GitHub an – lokal ist es erst nach einem Fetch bekannt.
+git fetch --tags --quiet 2>/dev/null || true
 PREV=$(gh release list --repo "$REPO" --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || true)
-if [ -n "$PREV" ]; then
+if [ -n "$PREV" ] && git rev-parse -q --verify "refs/tags/${PREV}" >/dev/null; then
   NOTES=$(git log --pretty='- %s' "${PREV}..HEAD" | grep -v '^- chore: Release-Binaries' || true)
   NOTES="## Änderungen seit ${PREV}"$'\n\n'"${NOTES}"
 else
@@ -114,9 +116,10 @@ if [ "$ASSUME_YES" -eq 0 ]; then
   esac
 fi
 
-# Binaries in den Commit, damit Repo-Stand und Release-Assets identisch sind
-if ! git diff --quiet -- bashq bashq-linux-amd64 bashq-linux-arm64; then
-  git add bashq bashq-linux-amd64 bashq-linux-arm64
+# Release-Binaries in den Commit, damit Repo-Stand und Assets identisch sind.
+# ./bashq bleibt außen vor – die Datei steht in .gitignore.
+if ! git diff --quiet -- bashq-linux-amd64 bashq-linux-arm64; then
+  git add bashq-linux-amd64 bashq-linux-arm64
   git commit -m "chore: Release-Binaries für ${VERSION}"
 fi
 git push
