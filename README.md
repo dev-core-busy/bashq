@@ -50,38 +50,56 @@ No cloud. No account. No data leaving your machine. Just you, your terminal, and
 
 ## Install in One Line
 
-The binary lives in `~/.local/share/bashq/` — `/usr/local/bin/bashq` is a symlink to it. Auto-update writes to the binary in place; the symlink stays valid.
-
-**x86-64 (most Linux desktops/servers):**
 ```bash
-mkdir -p ~/.local/share/bashq && curl -fsSL https://github.com/dev-core-busy/bashq/releases/latest/download/bashq-linux-amd64 -o ~/.local/share/bashq/bashq && chmod +x ~/.local/share/bashq/bashq && sudo ln -sf ~/.local/share/bashq/bashq /usr/local/bin/bashq
-```
-
-**ARM64 (Raspberry Pi 4/5):**
-```bash
-mkdir -p ~/.local/share/bashq && curl -fsSL https://github.com/dev-core-busy/bashq/releases/latest/download/bashq-linux-arm64 -o ~/.local/share/bashq/bashq && chmod +x ~/.local/share/bashq/bashq && sudo ln -sf ~/.local/share/bashq/bashq /usr/local/bin/bashq
+curl -fsSL https://raw.githubusercontent.com/dev-core-busy/bashq/main/install.sh | sh
 ```
 
 That's it. Run `bashq` from anywhere.
 
-> **No sudo?** Link into `~/.local/bin` instead:
-> ```bash
-> mkdir -p ~/.local/share/bashq ~/.local/bin
-> curl -fsSL https://github.com/dev-core-busy/bashq/releases/latest/download/bashq-linux-amd64 -o ~/.local/share/bashq/bashq && chmod +x ~/.local/share/bashq/bashq && ln -sf ~/.local/share/bashq/bashq ~/.local/bin/bashq
-> ```
-> Make sure `~/.local/bin` is in your `PATH` (`echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc`).
+The script detects your architecture, downloads the latest release into
+`~/.local/share/bashq/`, and links it into your `PATH` — `/usr/local/bin` when it
+can write there, otherwise `~/.local/bin`. Auto-update replaces the binary in
+place, so the symlink stays valid. No root required, nothing outside your home
+directory unless `/usr/local/bin` is already yours to write.
+
+Only `wget` on the box? `wget -qO- https://raw.githubusercontent.com/dev-core-busy/bashq/main/install.sh | sh`
+
+<sub>Piping a script into a shell means trusting it — [read it first](install.sh); it is ~150 lines of POSIX `sh`.</sub>
+
+**Options** — set as environment variables:
+
+| Variable | Effect |
+|----------|--------|
+| `BASHQ_BIN_DIR=~/bin` | Link into a directory of your choice |
+| `BASHQ_VERSION=v1.0.11` | Install a specific release instead of the latest |
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/dev-core-busy/bashq/main/install.sh | BASHQ_BIN_DIR=~/bin sh
+```
+
+**Uninstall:** `rm $(command -v bashq) && rm -rf ~/.local/share/bashq ~/.config/bashq`
 
 > **Already running bashq?** Type `/setup` inside the app — it installs or removes itself with one keypress. Auto-update is built in and can be toggled in `/config`.
 
-### Manual download
+### Manual install
 
-Grab the binary for your architecture from the **[Releases](../../releases)** page and run it directly:
+Prefer to see every step? Pick your architecture — `amd64` for most desktops and
+servers, `arm64` for a Raspberry Pi 4/5:
+
+```bash
+mkdir -p ~/.local/share/bashq
+curl -fsSL https://github.com/dev-core-busy/bashq/releases/latest/download/bashq-linux-amd64 -o ~/.local/share/bashq/bashq
+chmod +x ~/.local/share/bashq/bashq
+sudo ln -sf ~/.local/share/bashq/bashq /usr/local/bin/bashq   # or: ln -sf ... ~/.local/bin/bashq
+```
+
+Or grab the binary from the **[Releases](../../releases)** page and run it straight from your downloads folder:
 
 ```bash
 chmod +x bashq-linux-amd64 && ./bashq-linux-amd64
 ```
 
-### 2. Connect your LLM
+### Connect your LLM
 
 On first start, bashq connects to `http://localhost:9081/v1` (default).  
 Open `/config` in the input field — or let bashq find your LLM automatically:
@@ -92,7 +110,7 @@ Open `/config` in the input field — or let bashq find your LLM automatically:
 4. bashq scans ports `11434 1234 8080 8000 9081 7860 5000 3000` automatically
 5. Select a model from the list — done ✓
 
-### 3. Ask anything
+### Ask anything
 
 ```
 > Show me which processes are using the most memory
