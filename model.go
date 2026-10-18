@@ -362,14 +362,38 @@ func wrapText(text string, width int, indent string) string {
 		}
 		cur := pfx
 		empty := true
+		flush := func() {
+			sb.WriteString(cur + "\n")
+			cur = pfx
+			empty = true
+		}
+		avail := width - lipgloss.Width(pfx)
 		for _, tk := range splitWords(body) {
+			// Ein Wort, das selbst keine ganze Zeile füllt, muss zeichenweise
+			// gebrochen werden: CJK-Text kennt keine Leerzeichen, und überlange
+			// Wörter (URLs, Pfade) würden sonst über den Rand hinauslaufen.
+			if lipgloss.Width(tk.word) > avail {
+				if !empty {
+					flush()
+				}
+				parts := breakWord(tk.word, avail)
+				for i, p := range parts {
+					cur += p
+					empty = false
+					if i < len(parts)-1 {
+						flush()
+					}
+				}
+				continue
+			}
 			switch {
 			case empty:
 				cur += tk.word
 				empty = false
 			case lipgloss.Width(cur)+lipgloss.Width(tk.space+tk.word) > width:
-				sb.WriteString(cur + "\n")
-				cur = pfx + tk.word
+				flush()
+				cur += tk.word
+				empty = false
 			default:
 				cur += tk.space + tk.word
 			}
@@ -377,6 +401,30 @@ func wrapText(text string, width int, indent string) string {
 		sb.WriteString(cur)
 	}
 	return sb.String()
+}
+
+// breakWord teilt ein Wort, das breiter als avail ist, zeichenweise auf. Nötig für
+// Sprachen ohne Wortgrenzen (Chinesisch) und für überlange Token wie URLs.
+func breakWord(word string, avail int) []string {
+	if avail < 1 {
+		avail = 1
+	}
+	var parts []string
+	var cur string
+	curW := 0
+	for _, r := range word {
+		rw := lipgloss.Width(string(r))
+		if curW+rw > avail && cur != "" {
+			parts = append(parts, cur)
+			cur, curW = "", 0
+		}
+		cur += string(r)
+		curW += rw
+	}
+	if cur != "" {
+		parts = append(parts, cur)
+	}
+	return parts
 }
 
 // wordToken ist ein Wort samt des Whitespace, der ihm vorausgeht.

@@ -99,6 +99,8 @@ Im Titelbalken zeigt ein farbiger Badge den aktuellen Modus: **`[ Auto ]`** (gr�
 `roleOutput` trägt rohe Befehlsausgaben. Word-Wrap würde dort Spaltenlayouts (`df -h`, `ls -la`, `ps aux`) zerreißen, deshalb wird nur eingerückt. Neue Rollen **hinten** anfügen: `session.json` speichert den numerischen Wert, ein Einschub würde gespeicherte Verläufe umdeuten.
 
 `wrapText()` misst in Terminalspalten (`lipgloss.Width`), nicht in Bytes – sonst bricht Text mit Umlauten oder `–`/`↑↓` zu früh um. Fortsetzungszeilen erben die Einrückung der Originalzeile (hängender Einzug), und `splitWords()` erhält Mehrfach-Leerzeichen, damit Spaltenausrichtung im Hilfetext überlebt.
+
+Passt ein einzelnes Wort in keine Zeile, bricht `breakWord()` es zeichenweise. Das ist kein Randfall: Chinesisch kennt keine Leerzeichen, ein ganzer Satz ist für `splitWords()` ein Wort. Ohne diesen Fallback liefe die Zeile über `m.width` hinaus, das Terminal würde sie umbrechen – und damit im Viewport genau den Zeilenverlust auslösen, den `bottomLines()` unten verhindert.
 - Qwen3-`<think>`-Tags werden in `cleanResponse()` automatisch entfernt
 - `Message.Content` ist `interface{}` um JSON `null` (Tool-Call-Antworten) und Strings zu unterstützen
 
