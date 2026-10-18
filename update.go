@@ -1374,7 +1374,7 @@ func (m model) handleCommandResult(msg commandResultMsg) (model, tea.Cmd) {
 	} else {
 		m.logActivity(actExec, "✓ "+m.currentCmd)
 	}
-	m.addMessage(roleSystem, output)
+	m.addMessage(roleOutput, output)
 	m.updateViewport()
 
 	m.retryIsToolResult = true

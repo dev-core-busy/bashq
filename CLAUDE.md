@@ -85,7 +85,20 @@ Im Titelbalken zeigt ein farbiger Badge den aktuellen Modus: **`[ Auto ]`** (gr�
 | `/clear-llm-context` (`actionClearLLM`) | nur `agent.Reset()` – die Chat-Anzeige bleibt erhalten, das LLM startet ohne Vorwissen |
 | `/compact` (`actionCompact`) | ersetzt die LLM-History durch eine vom LLM erzeugte Zusammenfassung |
 
-`saveSession()` löscht die Sitzungsdatei, wenn nach dem Herausfiltern der `roleSystem`-Nachrichten nichts übrig bleibt – sonst würde `/clear-history` beim Beenden eine leere `session.json` zurücklassen.
+`saveSession()` löscht die Sitzungsdatei, wenn nach dem Herausfiltern der `roleSystem`- und `roleOutput`-Nachrichten nichts übrig bleibt – sonst würde `/clear-history` beim Beenden eine leere `session.json` zurücklassen.
+
+### Nachrichtenrollen (`msgRole`)
+
+| Rolle | Rendering in `buildContent()` | persistiert |
+|-------|-------------------------------|-------------|
+| `roleUser`, `roleAssistant` | `wrapText()` – auf `m.width-4` umgebrochen | ja |
+| `roleSystem` | `wrapText()` – Systemmeldungen, Hilfetext, `/activities` | nein |
+| `roleOutput` | `indentText()` – **nie** umgebrochen | nein |
+| `roleError` | einzeilig mit `✗`-Prefix | ja |
+
+`roleOutput` trägt rohe Befehlsausgaben. Word-Wrap würde dort Spaltenlayouts (`df -h`, `ls -la`, `ps aux`) zerreißen, deshalb wird nur eingerückt. Neue Rollen **hinten** anfügen: `session.json` speichert den numerischen Wert, ein Einschub würde gespeicherte Verläufe umdeuten.
+
+`wrapText()` misst in Terminalspalten (`lipgloss.Width`), nicht in Bytes – sonst bricht Text mit Umlauten oder `–`/`↑↓` zu früh um. Fortsetzungszeilen erben die Einrückung der Originalzeile (hängender Einzug), und `splitWords()` erhält Mehrfach-Leerzeichen, damit Spaltenausrichtung im Hilfetext überlebt.
 - Qwen3-`<think>`-Tags werden in `cleanResponse()` automatisch entfernt
 - `Message.Content` ist `interface{}` um JSON `null` (Tool-Call-Antworten) und Strings zu unterstützen
 
@@ -106,7 +119,7 @@ height = 1(title) + viewport.Height + 1(divider) + bottomLines()
 → viewport.Height = height - 4 - bottomLines()
 ```
 
-`bottomLines()` variiert je nach Zustand: 2 (Idle), 2+N (Idle+AC), 3 (Confirm), 2 (Loading). Muss mit den tatsächlichen Zeilen in `renderBottom()` übereinstimmen, sonst verschiebt sich das Layout.
+`bottomLines()` zählt die Zeilen des tatsächlich gerenderten `renderBottom()` (`strings.Count(…, "\n")+1`) und kann darum nicht mehr von der Anzeige abweichen. Render-Funktionen müssen ihre Ausgabe aber selbst auf `m.width` umbrechen (`wrapToWidth()` in `view.go`): Ein unkontrollierter Terminal-Umbruch erzeugt eine Bildschirmzeile, die in keinem `\n` auftaucht – die Gesamtausgabe wird zu hoch und Zeilen am unteren Rand werden verschluckt.
 
 ### Autovervollständigung
 
@@ -152,7 +165,7 @@ Zeilen = 1 + h + 1 + bottomLines() + 3 Newlines = h + bottomLines() + 2
 → h = m.height - 2 - bottomLines()
 ```
 
-`bottomLines()` variiert je nach Zustand: 2 (Idle), 2+N (Idle+AC), 3 (Confirm), 2 (Loading/Executing), 2 oder 3 (Config), 2 (EditPrompt). Muss exakt mit `renderBottom()` übereinstimmen.
+`bottomLines()` wird aus `renderBottom()` abgeleitet statt pro Zustand hartcodiert – siehe Abschnitt »Layout-Berechnung« weiter oben.
 
 ### Autovervollständigung
 

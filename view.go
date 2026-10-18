@@ -82,6 +82,22 @@ func (m model) renderTitle() string {
 	return titleBarStyle.Width(titleWidth).Render(titleText) + modeBadge + mouseBadge + sessBadge
 }
 
+// wrapToWidth bricht einen (ggf. ANSI-gestylten) Text explizit bei width um, statt
+// das dem Terminal zu überlassen. Ein unkontrollierter Terminal-Umbruch würde eine
+// zusätzliche Bildschirmzeile erzeugen, die bottomLines() nicht kennt — Folge wäre
+// eine um eine Zeile zu große Gesamtausgabe, die Zeilen am unteren Rand verschluckt.
+func wrapToWidth(s string, width int) string {
+	if width < 1 {
+		return s
+	}
+	wrapped := lipgloss.NewStyle().Width(width).Render(s)
+	lines := strings.Split(wrapped, "\n")
+	for i, l := range lines {
+		lines[i] = strings.TrimRight(l, " ")
+	}
+	return strings.Join(lines, "\n")
+}
+
 // --- Unterer Bereich ---
 
 func (m model) renderBottom() string {
@@ -213,7 +229,7 @@ func (m model) renderIdleBottom() string {
 		hintKeyStyle.Render(L.HintModeKey) + hintStyle.Render(" "+L.HintModeLabel+"  ") +
 		hintKeyStyle.Render(L.HintShortcutKeys) + hintStyle.Render(" "+L.HintShortcutLabel+"  ") +
 		hintKeyStyle.Render(L.HintQuitKey) + hintStyle.Render(" "+L.HintQuitLabel)
-	return inputLine + "\n" + hint
+	return inputLine + "\n" + wrapToWidth(hint, m.width)
 }
 
 func (m model) renderConfirmBottom() string {

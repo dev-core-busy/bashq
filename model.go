@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type appState int
@@ -212,6 +213,11 @@ const (
 	roleAssistant
 	roleSystem
 	roleError
+	// roleOutput: rohe Befehlsausgabe. Wird NUR eingerückt, nie umgebrochen —
+	// Word-Wrap würde Spaltenlayouts (df -h, ls -la, ps aux) zerreißen.
+	// Neue Rollen müssen hinten angefügt werden: session.json speichert den
+	// numerischen Wert, ein Einschub würde gespeicherte Verläufe umdeuten.
+	roleOutput
 )
 
 type chatMessage struct {
@@ -250,6 +256,8 @@ func (m *model) buildContent() string {
 			sb.WriteString(assistantLabelStyle.Render(L.LabelAssistant) + "\n")
 			sb.WriteString(wrapText(msg.content, m.width-4, "  ") + "\n\n")
 		case roleSystem:
+			sb.WriteString(systemMsgStyle.Render(wrapText(msg.content, m.width-4, "  ")) + "\n\n")
+		case roleOutput:
 			sb.WriteString(systemMsgStyle.Render(indentText(msg.content, "  ")) + "\n\n")
 		case roleError:
 			sb.WriteString(errorMsgStyle.Render("  ✗ "+msg.content) + "\n\n")
@@ -273,57 +281,12 @@ func (m *model) recalcViewport() {
 	m.viewport.Width = m.width
 }
 
-// inputLineCount gibt zurück, wie viele Zeilen das Eingabefeld bei aktueller Terminalbreite belegt.
-func (m model) inputLineCount() int {
-	const promptWidth = 3
-	avail := m.width - promptWidth
-	if avail < 1 {
-		avail = 1
-	}
-	n := len([]rune(m.input.Value()))
-	if n == 0 {
-		return 1
-	}
-	return (n + avail - 1) / avail
-}
-
 // bottomLines gibt die Anzahl der Zeilen im unteren Bereich zurück.
+// Wird direkt aus renderBottom() abgeleitet, damit die berechnete Höhe nie von der
+// tatsächlich gerenderten Zeilenzahl abweicht — auch wenn eine Hinweiszeile bei
+// schmalem Terminal durch automatischen Zeilenumbruch mehr Platz braucht als angenommen.
 func (m *model) bottomLines() int {
-	switch m.state {
-	case stateConfirm:
-		return 3
-	case stateLoading, stateExecuting:
-		return 2
-	case stateConfig:
-		if m.configEditing {
-			return 3 // "Bearbeite <feld>:" + input + hints
-		}
-		return 2
-	case stateEditPrompt:
-		return 2 // hints
-	case stateDiscover:
-		switch m.discStep {
-		case discEnterHost:
-			if m.discEditProfile >= 0 && m.discErr != "" {
-				return 2 // Fehlermeldung im View, nur Esc-Hint unten
-			}
-			return 3 // label+input, hint, trailing newline
-		case discEnterName:
-			return 3
-		default:
-			return 2 // spinner/nav + hint
-		}
-	}
-	// stateIdle
-	lines := 1 + m.inputLineCount() // Eingabe (1+) + Hinweiszeile
-	if m.showAC && len(m.filtered) > 0 {
-		visible := minInt(len(m.filtered), maxACVisible)
-		lines += visible
-		if len(m.filtered) > maxACVisible {
-			lines++
-		}
-	}
-	return lines
+	return strings.Count(m.renderBottom(), "\n") + 1
 }
 
 func (m *model) updateAC() {
@@ -370,34 +333,80 @@ func (m *model) updateModelWindow() {
 
 // --- Textformatierung ---
 
+// wrapText bricht Text auf width Spalten um und rückt jede Zeile mit indent ein.
+// Muss eine Zeile umgebrochen werden, erben die Fortsetzungszeilen die führende
+// Einrückung der Originalzeile (hängender Einzug), damit eingerückte Strukturen
+// wie der Hilfetext ihre Form behalten.
+//
+// Gemessen wird in Terminalspalten (lipgloss.Width), nicht in Bytes: Umlaute und
+// Zeichen wie – oder ↑↓ brauchen mehrere Bytes, eine Byte-Zählung bricht deutschen
+// Text darum deutlich zu früh um. CJK-Zeichen zählen korrekt als zwei Spalten.
 func wrapText(text string, width int, indent string) string {
-	if width <= len(indent)+4 {
-		return indent + text
+	if width <= lipgloss.Width(indent)+4 {
+		return indentText(text, indent)
 	}
 	var sb strings.Builder
 	for i, line := range strings.Split(text, "\n") {
 		if i > 0 {
 			sb.WriteByte('\n')
 		}
-		if len(line) <= width-len(indent) {
+		if lipgloss.Width(indent+line) <= width {
 			sb.WriteString(indent + line)
 			continue
 		}
-		words := strings.Fields(line)
-		cur := indent
-		for _, word := range words {
-			if len(cur)+len(word)+1 > width && cur != indent {
+		body := strings.TrimLeft(line, " \t")
+		pfx := indent + line[:len(line)-len(body)]
+		// Bei sehr schmalem Terminal bliebe hinter tiefem Einzug kein Platz für Text.
+		if lipgloss.Width(pfx)+8 > width {
+			pfx = indent
+		}
+		cur := pfx
+		empty := true
+		for _, tk := range splitWords(body) {
+			switch {
+			case empty:
+				cur += tk.word
+				empty = false
+			case lipgloss.Width(cur)+lipgloss.Width(tk.space+tk.word) > width:
 				sb.WriteString(cur + "\n")
-				cur = indent + word
-			} else if cur == indent {
-				cur = indent + word
-			} else {
-				cur = cur + " " + word
+				cur = pfx + tk.word
+			default:
+				cur += tk.space + tk.word
 			}
 		}
 		sb.WriteString(cur)
 	}
 	return sb.String()
+}
+
+// wordToken ist ein Wort samt des Whitespace, der ihm vorausgeht.
+type wordToken struct {
+	space string
+	word  string
+}
+
+// splitWords zerlegt eine Zeile in Wörter und behält den trennenden Whitespace
+// bei — anders als strings.Fields, das Mehrfach-Leerzeichen kollabiert und damit
+// Spaltenausrichtung (z.B. "/compact       – Beschreibung") zerstören würde.
+// Die Byte-Vergleiche sind UTF-8-sicher: ASCII-Bytes treten in Mehrbyte-Sequenzen nicht auf.
+func splitWords(s string) []wordToken {
+	var toks []wordToken
+	for i := 0; i < len(s); {
+		j := i
+		for j < len(s) && (s[j] == ' ' || s[j] == '\t') {
+			j++
+		}
+		k := j
+		for k < len(s) && s[k] != ' ' && s[k] != '\t' {
+			k++
+		}
+		if j == k {
+			break // nur noch Whitespace am Zeilenende
+		}
+		toks = append(toks, wordToken{space: s[i:j], word: s[j:k]})
+		i = k
+	}
+	return toks
 }
 
 func indentText(text, indent string) string {

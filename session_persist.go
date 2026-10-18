@@ -52,10 +52,12 @@ func saveSession(messages []chatMessage, history []Message, inputHistory []strin
 	}
 
 	// roleSystem (Health-Check, Session-Header, Update-Meldungen) nicht persistieren —
-	// sonst akkumulieren sich diese Nachrichten bei jedem Neustart.
+	// sonst akkumulieren sich diese Nachrichten bei jedem Neustart. roleOutput
+	// (Befehlsausgaben) ebenso nicht: war vor der Rollentrennung Teil von roleSystem
+	// und würde die Sitzungsdatei sonst mit vollen Kommandoausgaben aufblähen.
 	var savedMsgs []savedChatMessage
 	for _, m := range messages {
-		if m.role != roleSystem {
+		if m.role != roleSystem && m.role != roleOutput {
 			savedMsgs = append(savedMsgs, savedChatMessage{Role: int(m.role), Content: m.content})
 		}
 	}
