@@ -85,7 +85,13 @@ Im Titelbalken zeigt ein farbiger Badge den aktuellen Modus: **`[ Auto ]`** (gr�
 | `/clear-llm-context` (`actionClearLLM`) | nur `agent.Reset()` – die Chat-Anzeige bleibt erhalten, das LLM startet ohne Vorwissen |
 | `/compact` (`actionCompact`) | ersetzt die LLM-History durch eine vom LLM erzeugte Zusammenfassung |
 
-`saveSession()` löscht die Sitzungsdatei, wenn nach dem Herausfiltern der `roleSystem`- und `roleOutput`-Nachrichten nichts übrig bleibt – sonst würde `/clear-history` beim Beenden eine leere `session.json` zurücklassen.
+### Sitzungspersistenz (`session_persist.go`)
+
+`saveSession()` filtert `roleSystem` und `roleOutput` heraus. Bleibt danach nichts übrig, schreibt es nicht – **löscht die Datei aber auch nicht**. Ein `os.Remove()` an dieser Stelle hatte eine intakte Sitzung vernichtet, sobald `m.messages` nur Systemmeldungen enthielt (z.B. nur die Health-Check-Meldung). Das Aufräumen gehört allein zu `deleteSession()`, das `/clear-history` selbst aufruft.
+
+`loadSession() (loadedSession, bool)` ist **synchron** und wird in `newModel()` aufgerufen, nicht als `tea.Cmd` in `Init()`. Asynchron gab es ein Wettrennen mit `cmdHealthCheck`: kam dessen Systemmeldung zuerst, war `m.messages` nicht mehr leer, die geladene Sitzung wurde verworfen – und beim nächsten Beenden überschrieben. `newModel()` setzt `m.messages`, `agent.history` und `m.inputHistory` direkt; das Rendern übernimmt das erste `WindowSizeMsg` (`default`-Zweig ruft `updateViewport()`).
+
+`session_persist_test.go` deckt beide Punkte ab.
 
 ### Nachrichtenrollen (`msgRole`)
 

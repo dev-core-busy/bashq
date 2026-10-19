@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
-	tea "github.com/charmbracelet/bubbletea"
 )
 
 type savedChatMessage struct {
@@ -21,8 +19,8 @@ type savedSession struct {
 	InputHistory []string           `json:"input_history,omitempty"`
 }
 
-// sessionLoadedMsg wird nach asynchronem Laden der gespeicherten Sitzung gesendet.
-type sessionLoadedMsg struct {
+// loadedSession hält eine von Disk gelesene Sitzung.
+type loadedSession struct {
 	messages     []chatMessage
 	history      []Message
 	inputHistory []string
@@ -61,10 +59,11 @@ func saveSession(messages []chatMessage, history []Message, inputHistory []strin
 			savedMsgs = append(savedMsgs, savedChatMessage{Role: int(m.role), Content: m.content})
 		}
 	}
-	// Nichts Speicherbares übrig (z.B. direkt nach /clear-history): keine
-	// leere Sitzungsdatei zurücklassen.
+	// Nichts Speicherbares übrig: nicht schreiben, aber auch NICHT löschen.
+	// Ein Löschen hier hätte eine intakte Sitzung vernichtet, sobald m.messages
+	// nur Systemmeldungen enthielt. /clear-history löscht die Datei selbst
+	// über deleteSession().
 	if len(savedMsgs) == 0 {
-		os.Remove(path)
 		return
 	}
 
@@ -85,42 +84,43 @@ func saveSession(messages []chatMessage, history []Message, inputHistory []strin
 	os.WriteFile(path, data, 0600)
 }
 
-// cmdLoadSession lädt die gespeicherte Sitzung asynchron.
-func cmdLoadSession() tea.Cmd {
-	return func() tea.Msg {
-		path, err := sessionFilePath()
-		if err != nil {
-			return nil
-		}
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return nil
-		}
-		var s savedSession
-		if err := json.Unmarshal(data, &s); err != nil {
-			return nil
-		}
-		if len(s.Messages) == 0 {
-			return nil
-		}
-
-		msgs := make([]chatMessage, len(s.Messages))
-		for i, m := range s.Messages {
-			msgs[i] = chatMessage{role: msgRole(m.Role), content: m.Content}
-		}
-
-		var hist []Message
-		if len(s.AgentHistory) > 0 {
-			json.Unmarshal(s.AgentHistory, &hist)
-		}
-
-		at := s.SavedAt
-		if t, err := time.Parse(time.RFC3339, s.SavedAt); err == nil {
-			at = t.Format("02.01.2006 15:04")
-		}
-
-		return sessionLoadedMsg{messages: msgs, history: hist, inputHistory: s.InputHistory, savedAt: at}
+// loadSession liest die gespeicherte Sitzung von Disk. Wird bewusst synchron in
+// newModel() aufgerufen, nicht als tea.Cmd: asynchron gab es ein Wettrennen mit
+// dem Health-Check — kam dessen Systemmeldung zuerst, wurde die geladene Sitzung
+// verworfen. Zweiter Rückgabewert ist false, wenn keine brauchbare Sitzung vorliegt.
+func loadSession() (loadedSession, bool) {
+	path, err := sessionFilePath()
+	if err != nil {
+		return loadedSession{}, false
 	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return loadedSession{}, false
+	}
+	var s savedSession
+	if err := json.Unmarshal(data, &s); err != nil {
+		return loadedSession{}, false
+	}
+	if len(s.Messages) == 0 {
+		return loadedSession{}, false
+	}
+
+	msgs := make([]chatMessage, len(s.Messages))
+	for i, m := range s.Messages {
+		msgs[i] = chatMessage{role: msgRole(m.Role), content: m.Content}
+	}
+
+	var hist []Message
+	if len(s.AgentHistory) > 0 {
+		json.Unmarshal(s.AgentHistory, &hist)
+	}
+
+	at := s.SavedAt
+	if t, err := time.Parse(time.RFC3339, s.SavedAt); err == nil {
+		at = t.Format("02.01.2006 15:04")
+	}
+
+	return loadedSession{messages: msgs, history: hist, inputHistory: s.InputHistory, savedAt: at}, true
 }
 
 // deleteSession löscht die gespeicherte Sitzung (z.B. nach /clear).

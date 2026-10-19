@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -169,7 +170,7 @@ func newModel() model {
 	ag.customPrompt = cfg.customPrompt
 	ag.SetTimeout(cfg.llmTimeout)
 
-	return model{
+	m := model{
 		input:           ti,
 		promptEditor:    te,
 		agent:           ag,
@@ -180,6 +181,32 @@ func newModel() model {
 		profileSubSel:   -1,
 		discEditProfile: -1,
 	}
+
+	// Gespeicherte Sitzung synchron laden, bevor die Bubbletea-Schleife startet.
+	// Als tea.Cmd gab es hier ein Wettrennen mit dem Health-Check: kam dessen
+	// Systemmeldung zuerst, war m.messages nicht mehr leer, die Sitzung wurde
+	// verworfen — und beim nächsten Beenden überschrieben.
+	if cfg.saveSessions {
+		if s, ok := loadSession(); ok {
+			header := chatMessage{
+				role:    roleSystem,
+				content: fmt.Sprintf(L.SessionRestoredFmt, s.savedAt),
+			}
+			m.messages = append([]chatMessage{header}, s.messages...)
+			ag.history = s.history
+			m.inputHistory = s.inputHistory
+			if len(m.inputHistory) == 0 {
+				// Alte Sessions ohne input_history: User-Nachrichten rekonstruieren
+				for _, cm := range s.messages {
+					if cm.role == roleUser && cm.content != "" {
+						m.inputHistory = append(m.inputHistory, cm.content)
+					}
+				}
+			}
+		}
+	}
+
+	return m
 }
 
 func (m model) Init() tea.Cmd {
@@ -189,9 +216,7 @@ func (m model) Init() tea.Cmd {
 	if !m.cfg.mouseTracking {
 		cmds = append(cmds, tea.DisableMouse)
 	}
-	if m.cfg.saveSessions {
-		cmds = append(cmds, cmdLoadSession())
-	}
+	// Die Sitzung ist zu diesem Zeitpunkt bereits in newModel() geladen.
 	if m.cfg.activeProfileIdx >= 0 && m.cfg.activeProfileIdx < len(m.cfg.profiles) {
 		p := m.cfg.profiles[m.cfg.activeProfileIdx]
 		if p.Name != "" {
