@@ -107,6 +107,8 @@ Im Titelbalken zeigt ein farbiger Badge den aktuellen Modus: **`[ Auto ]`** (gr�
 `wrapText()` misst in Terminalspalten (`lipgloss.Width`), nicht in Bytes – sonst bricht Text mit Umlauten oder `–`/`↑↓` zu früh um. Fortsetzungszeilen erben die Einrückung der Originalzeile (hängender Einzug), und `splitWords()` erhält Mehrfach-Leerzeichen, damit Spaltenausrichtung im Hilfetext überlebt.
 
 Passt ein einzelnes Wort in keine Zeile, bricht `breakWord()` es zeichenweise. Das ist kein Randfall: Chinesisch kennt keine Leerzeichen, ein ganzer Satz ist für `splitWords()` ein Wort. Ohne diesen Fallback liefe die Zeile über `m.width` hinaus, das Terminal würde sie umbrechen – und damit im Viewport genau den Zeilenverlust auslösen, den `bottomLines()` unten verhindert.
+
+Dasselbe gilt für Spaltenlayouts: `truncToWidth()` und `padToWidth()` (`view.go`) kürzen bzw. füllen in Terminalspalten. **Nicht** `fmt.Sprintf("%-*s", …)` zum Ausrichten benutzen – dessen Breite zählt Runen. Bei Umlauten stimmt das zufällig, bei Breitzeichen nicht: `通义` sind zwei Runen, belegen aber vier Spalten. In der Modellliste des Discover-Flows lief die Zeile dadurch über `m.width` hinaus. `view_test.go` prüft die Ausrichtung am gerenderten Text.
 - Qwen3-`<think>`-Tags werden in `cleanResponse()` automatisch entfernt
 - `Message.Content` ist `interface{}` um JSON `null` (Tool-Call-Antworten) und Strings zu unterstützen
 
@@ -178,3 +180,31 @@ Zeilen = 1 + h + 1 + bottomLines() + 3 Newlines = h + bottomLines() + 2
 ### Autovervollständigung
 
 Wird aktiv sobald die Eingabe mit `/` beginnt. `updateAC()` wird nach jeder Tasteneingabe aufgerufen und filtert `slashCommands` (in `commands.go`). Navigation mit ↑/↓/Tab, Auswahl mit Enter, Schließen mit Esc. Nach Selektion wird `selectCommand()` in `update.go` aufgerufen.
+
+## Daueraufgabe: bashq ↔ winq synchron halten
+
+Schwesterprojekt: `../windows_cmd_agent` (**winq**) – derselbe Agent für Windows.
+
+**Die Sync-Pflicht gilt in BEIDE Richtungen.** Beide CLAUDE.md beschrieben früher nur `bashq → winq`; dadurch blieben dort entstandene Fixes hier liegen (das synchrone Sitzungsladen und die Spaltenausrichtung der Profilliste wurden deshalb erst nachträglich portiert). Wer an einem der beiden Projekte etwas ändert, prüft also immer auch das andere:
+
+- **bashq → winq**: jede Windows-kompatible Änderung dort nachziehen.
+- **winq → bashq**: Bugfixes, die in winq zuerst entstanden sind, hierher zurückportieren. Praktischer Einstieg ist ein Dateidiff zwischen beiden Bäumen: `diff -u <datei> ../windows_cmd_agent/<datei>`.
+
+Gemeinsame Dateien (Diff sollte nur Plattformdetails zeigen):
+`view.go`, `i18n.go`, `model.go`, `styles.go`, `agent.go`, `commands.go`, `activities.go`, `session_persist.go`, `config_persist.go`, `discovery.go`, `updater.go`
+
+Gemeinsame Tests (byte-identisch in beiden Bäumen):
+`session_persist_test.go`, `view_test.go`
+
+`updater_test.go` ist in beiden Bäumen **unterschiedlich** gewachsen (hier `TestCompareVersions` für `compareVersions()`, in winq `TestSemverGT` für `semverGT()` – verschiedene Funktionen). Nicht blind überschreiben.
+
+`session_persist_test.go` lenkt `os.UserConfigDir()` in ein Temp-Verzeichnis um und setzt dazu **`XDG_CONFIG_HOME` und `AppData`**, weil Go je Plattform eine andere Variable liest (`%AppData%` auf Windows). `redirectConfigDir()` prüft danach, dass `sessionFilePath()` wirklich im Temp-Verzeichnis liegt – ohne diese Absicherung würde der Test unter Windows die echte `session.json` beschreiben und am Ende löschen. Die Variable also nicht „aufräumen", nur weil sie auf Linux nichts tut.
+
+Linux-spezifische Dateien (**nicht** aus winq übernehmen):
+- `main.go` — nutzt `syscall.Exec`
+- `update.go` — führt über `bash -c` aus (winq: `powershell`)
+- `selfinstall.go` — Symlinks (winq: Windows-PATH-Eintrag)
+- `clipboard.go` — `wl-paste`/`xclip`/`xsel` (in winq steckt das in `model.go`/`terminal_windows.go`)
+- `colors.go` — in winq nur ein No-op-Stub
+
+Erwartete Rest-Diffs in den gemeinsamen Dateien: der Konfigverzeichnisname (`bashq` ↔ `winq`), Asset-Namen im Updater, Beispielbefehle in Kommentaren und `cmdInitSize()` (nur winq, umgeht einen Startup-Hänger auf Windows).

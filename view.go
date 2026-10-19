@@ -98,6 +98,43 @@ func wrapToWidth(s string, width int) string {
 	return strings.Join(lines, "\n")
 }
 
+// truncToWidth kürzt s auf höchstens width Terminalspalten und markiert die
+// Kürzung mit "…". Gemessen wird in Spalten (lipgloss.Width), nicht in Runen:
+// CJK-Zeichen belegen zwei Spalten, eine runenbasierte Grenze ließe die Zeile
+// über die Terminalbreite hinauslaufen.
+func truncToWidth(s string, width int) string {
+	if width < 1 {
+		return ""
+	}
+	if lipgloss.Width(s) <= width {
+		return s
+	}
+	const ellipsis = "…"
+	budget := width - lipgloss.Width(ellipsis)
+	var b strings.Builder
+	w := 0
+	for _, r := range s {
+		rw := lipgloss.Width(string(r))
+		if w+rw > budget {
+			break
+		}
+		b.WriteRune(r)
+		w += rw
+	}
+	return b.String() + ellipsis
+}
+
+// padToWidth füllt s rechts auf width Terminalspalten auf. Nicht über fmt's
+// "%-*s": dessen Breite zählt Runen, nicht Spalten. Für Umlaute ist beides
+// gleich, für Breitzeichen nicht — "通义" sind zwei Runen, belegen aber vier
+// Spalten und liefen damit zwei Spalten zu weit.
+func padToWidth(s string, width int) string {
+	if pad := width - lipgloss.Width(s); pad > 0 {
+		return s + strings.Repeat(" ", pad)
+	}
+	return s
+}
+
 // --- Unterer Bereich ---
 
 func (m model) renderBottom() string {
@@ -383,21 +420,22 @@ func (m model) renderDiscoverContent() string {
 		for i := m.discModelOffset; i < windowEnd; i++ {
 			fm := m.discModels[i]
 			sel := i == m.modelSel
-			// Source kürzen damit die Zeile nicht umbricht (Prefix=2, Separator=2)
+			// Spaltenbudget der Zeile: 2 (Prefix "▶ "/"  ") + Name + 2 (Separator) + Quelle.
+			// Die Quelle von links kürzen – bei langen URLs trägt das Ende (Host:Port)
+			// die Information.
 			const maxSrcRunes = 22
-			srcRunes := []rune(fm.Source)
 			source := fm.Source
-			if len(srcRunes) > maxSrcRunes {
+			if srcRunes := []rune(source); len(srcRunes) > maxSrcRunes {
 				source = "…" + string(srcRunes[len(srcRunes)-(maxSrcRunes-1):])
 			}
-			maxN := m.width - 4 - len([]rune(source))
-			if maxN < 8 {
-				maxN = 8
-			}
+			nameW := m.width - 4 - lipgloss.Width(source)
 			name := fm.Name
-			nameRunes := []rune(name)
-			if len(nameRunes) > maxN {
-				name = string(nameRunes[:maxN-1]) + "…"
+			if nameW < 8 {
+				// Terminal zu schmal für saubere Spalten: hier NICHT auffüllen,
+				// sonst liefe die Zeile über m.width hinaus.
+				name = truncToWidth(name, 8)
+			} else {
+				name = padToWidth(truncToWidth(name, nameW), nameW)
 			}
 			line := name + "  " + dimStyle.Render(source)
 			if sel {
