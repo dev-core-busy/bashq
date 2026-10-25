@@ -10,7 +10,6 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type appState int
@@ -344,11 +343,7 @@ func (m *model) promptEditorHeight() int {
 
 // updateModelWindow passt discModelOffset an, sodass modelSel im sichtbaren Fenster bleibt.
 func (m *model) updateModelWindow() {
-	const headerLines = 5 // blank + title+blank + found+blank
-	vis := m.viewport.Height - headerLines
-	if vis < 1 {
-		vis = 1
-	}
+	vis := m.discModelRows()
 	if m.modelSel < m.discModelOffset {
 		m.discModelOffset = m.modelSel
 	} else if m.modelSel >= m.discModelOffset+vis {
@@ -363,11 +358,11 @@ func (m *model) updateModelWindow() {
 // Einrückung der Originalzeile (hängender Einzug), damit eingerückte Strukturen
 // wie der Hilfetext ihre Form behalten.
 //
-// Gemessen wird in Terminalspalten (lipgloss.Width), nicht in Bytes: Umlaute und
+// Gemessen wird in Terminalspalten (cellWidth), nicht in Bytes: Umlaute und
 // Zeichen wie – oder ↑↓ brauchen mehrere Bytes, eine Byte-Zählung bricht deutschen
 // Text darum deutlich zu früh um. CJK-Zeichen zählen korrekt als zwei Spalten.
 func wrapText(text string, width int, indent string) string {
-	if width <= lipgloss.Width(indent)+4 {
+	if width <= cellWidth(indent)+4 {
 		return indentText(text, indent)
 	}
 	var sb strings.Builder
@@ -375,14 +370,14 @@ func wrapText(text string, width int, indent string) string {
 		if i > 0 {
 			sb.WriteByte('\n')
 		}
-		if lipgloss.Width(indent+line) <= width {
+		if cellWidth(indent+line) <= width {
 			sb.WriteString(indent + line)
 			continue
 		}
 		body := strings.TrimLeft(line, " \t")
 		pfx := indent + line[:len(line)-len(body)]
 		// Bei sehr schmalem Terminal bliebe hinter tiefem Einzug kein Platz für Text.
-		if lipgloss.Width(pfx)+8 > width {
+		if cellWidth(pfx)+8 > width {
 			pfx = indent
 		}
 		cur := pfx
@@ -392,12 +387,12 @@ func wrapText(text string, width int, indent string) string {
 			cur = pfx
 			empty = true
 		}
-		avail := width - lipgloss.Width(pfx)
+		avail := width - cellWidth(pfx)
 		for _, tk := range splitWords(body) {
 			// Ein Wort, das selbst keine ganze Zeile füllt, muss zeichenweise
 			// gebrochen werden: CJK-Text kennt keine Leerzeichen, und überlange
 			// Wörter (URLs, Pfade) würden sonst über den Rand hinauslaufen.
-			if lipgloss.Width(tk.word) > avail {
+			if cellWidth(tk.word) > avail {
 				if !empty {
 					flush()
 				}
@@ -415,7 +410,7 @@ func wrapText(text string, width int, indent string) string {
 			case empty:
 				cur += tk.word
 				empty = false
-			case lipgloss.Width(cur)+lipgloss.Width(tk.space+tk.word) > width:
+			case cellWidth(cur)+cellWidth(tk.space+tk.word) > width:
 				flush()
 				cur += tk.word
 				empty = false
@@ -428,8 +423,9 @@ func wrapText(text string, width int, indent string) string {
 	return sb.String()
 }
 
-// breakWord teilt ein Wort, das breiter als avail ist, zeichenweise auf. Nötig für
-// Sprachen ohne Wortgrenzen (Chinesisch) und für überlange Token wie URLs.
+// breakWord teilt ein Wort, das breiter als avail ist, zeichenweise (nach
+// Graphem-Clustern) auf. Nötig für Sprachen ohne Wortgrenzen (Chinesisch) und für
+// überlange Token wie URLs.
 func breakWord(word string, avail int) []string {
 	if avail < 1 {
 		avail = 1
@@ -437,14 +433,13 @@ func breakWord(word string, avail int) []string {
 	var parts []string
 	var cur string
 	curW := 0
-	for _, r := range word {
-		rw := lipgloss.Width(string(r))
-		if curW+rw > avail && cur != "" {
+	for _, c := range graphemes(word) {
+		if curW+c.w > avail && cur != "" {
 			parts = append(parts, cur)
 			cur, curW = "", 0
 		}
-		cur += string(r)
-		curW += rw
+		cur += c.s
+		curW += c.w
 	}
 	if cur != "" {
 		parts = append(parts, cur)
@@ -492,6 +487,13 @@ func indentText(text, indent string) string {
 
 func minInt(a, b int) int {
 	if a < b {
+		return a
+	}
+	return b
+}
+
+func maxInt(a, b int) int {
+	if a > b {
 		return a
 	}
 	return b

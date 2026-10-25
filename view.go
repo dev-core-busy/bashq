@@ -4,8 +4,12 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
+	"github.com/mattn/go-runewidth"
+	"github.com/rivo/uniseg"
 )
 
 func (m model) View() string {
@@ -98,30 +102,115 @@ func wrapToWidth(s string, width int) string {
 	return strings.Join(lines, "\n")
 }
 
-// truncToWidth kürzt s auf höchstens width Terminalspalten und markiert die
-// Kürzung mit "…". Gemessen wird in Spalten (lipgloss.Width), nicht in Runen:
+// ambiguousWide gibt an, ob das Terminal East-Asian-Ambiguous-Zeichen (…, ▶, –, •)
+// doppelt breit darstellt – in Terminals mit CJK-Locale üblich. go-runewidth
+// leitet das aus RUNEWIDTH_EASTASIAN bzw. der Locale ab (unter Windows aus der
+// Konsolen-Codepage). lipgloss.Width zählt diese Zeichen immer einfach.
+var ambiguousWide = runewidth.EastAsianWidth
+
+// cluster ist ein Graphem-Cluster samt seiner Breite in Terminalspalten.
+type cluster struct {
+	s string
+	w int
+}
+
+// graphemes zerlegt s in Graphem-Cluster. Nicht runenweise messen: ❤️ ist
+// U+2764 + U+FE0F, runenweise 1+0 Spalten, als Cluster aber 2 – und 👍🏽 darf
+// beim Kürzen nicht vom Hautton-Modifier getrennt werden.
+func graphemes(s string) []cluster {
+	var cs []cluster
+	g := uniseg.NewGraphemes(s)
+	for g.Next() {
+		cs = append(cs, cluster{g.Str(), clusterWidth(g.Str(), g.Width())})
+	}
+	return cs
+}
+
+// clusterWidth korrigiert die uniseg-Breite w eines Clusters um ambiguousWide.
+func clusterWidth(c string, w int) int {
+	if w == 1 && ambiguousWide {
+		if r, _ := utf8.DecodeRuneInString(c); runewidth.IsAmbiguousWidth(r) {
+			return 2
+		}
+	}
+	return w
+}
+
+// cellWidth misst eine einzeilige (ggf. ANSI-gestylte) Zeichenkette in
+// Terminalspalten wie lipgloss.Width, berücksichtigt aber ambiguousWide.
+// ANSI-Sequenzen bestehen aus ASCII und tragen nichts zum Aufschlag bei.
+func cellWidth(s string) int {
+	w := lipgloss.Width(s)
+	if ambiguousWide {
+		g := uniseg.NewGraphemes(s)
+		for g.Next() {
+			w += clusterWidth(g.Str(), g.Width()) - g.Width()
+		}
+	}
+	return w
+}
+
+const ellipsis = "…"
+
+// truncToWidth kürzt s (ungestylt) auf höchstens width Terminalspalten und
+// markiert die Kürzung mit "…". Gemessen wird in Spalten, nicht in Runen:
 // CJK-Zeichen belegen zwei Spalten, eine runenbasierte Grenze ließe die Zeile
 // über die Terminalbreite hinauslaufen.
 func truncToWidth(s string, width int) string {
+	return truncWithTail(s, width, ellipsis)
+}
+
+// truncWithTail kürzt wie truncToWidth, markiert die Kürzung aber mit tail
+// (leer: ohne Markierung). Passt tail selbst nicht, entfällt es.
+func truncWithTail(s string, width int, tail string) string {
 	if width < 1 {
 		return ""
 	}
-	if lipgloss.Width(s) <= width {
+	if cellWidth(s) <= width {
 		return s
 	}
-	const ellipsis = "…"
-	budget := width - lipgloss.Width(ellipsis)
+	if cellWidth(tail) > width {
+		tail = ""
+	}
+	budget := width - cellWidth(tail)
 	var b strings.Builder
 	w := 0
-	for _, r := range s {
-		rw := lipgloss.Width(string(r))
-		if w+rw > budget {
+	for _, c := range graphemes(s) {
+		if w+c.w > budget {
 			break
 		}
-		b.WriteRune(r)
-		w += rw
+		b.WriteString(c.s)
+		w += c.w
 	}
-	return b.String() + ellipsis
+	return b.String() + tail
+}
+
+// truncLeftToWidth kürzt s (ungestylt) von links auf höchstens width
+// Terminalspalten – für URLs, bei denen das Ende (Host:Port) die Information trägt.
+func truncLeftToWidth(s string, width int) string {
+	if width < 1 {
+		return ""
+	}
+	if cellWidth(s) <= width {
+		return s
+	}
+	head := ellipsis
+	if cellWidth(head) > width {
+		head = ""
+	}
+	budget := width - cellWidth(head)
+	cs := graphemes(s)
+	i, w := len(cs), 0
+	for i > 0 && w+cs[i-1].w <= budget {
+		i--
+		w += cs[i].w
+	}
+	var b strings.Builder
+	b.WriteString(head)
+	for _, c := range cs[i:] {
+		b.WriteString(c.s)
+	}
+	return b.String()
 }
 
 // padToWidth füllt s rechts auf width Terminalspalten auf. Nicht über fmt's
@@ -129,10 +218,46 @@ func truncToWidth(s string, width int) string {
 // gleich, für Breitzeichen nicht — "通义" sind zwei Runen, belegen aber vier
 // Spalten und liefen damit zwei Spalten zu weit.
 func padToWidth(s string, width int) string {
-	if pad := width - lipgloss.Width(s); pad > 0 {
+	if pad := width - cellWidth(s); pad > 0 {
 		return s + strings.Repeat(" ", pad)
 	}
 	return s
+}
+
+// fitColumns richtet name links auf nameCols Spalten aus und kürzt rest so, dass
+// name + "  " + rest höchstens avail Spalten belegt. Reicht der Platz nicht, wird
+// zuerst der Name gekürzt (nicht unter minName), danach rest; bleibt für rest
+// nichts übrig, entfallen rest und Trenner (restOut == ""). rest wird von rechts
+// gekürzt, bei fromLeft von links. Beide Teile kommen ungestylt zurück, damit der
+// Aufrufer sie getrennt einfärben kann.
+func fitColumns(name string, nameCols, minName int, rest string, fromLeft bool, avail int) (nameOut, restOut string) {
+	const sep = 2
+	nameCols = minInt(nameCols, maxInt(avail-sep-cellWidth(rest), minName))
+	restCols := avail - nameCols - sep
+	if restCols < 1 {
+		return truncToWidth(name, avail), ""
+	}
+	if fromLeft {
+		restOut = truncLeftToWidth(rest, restCols)
+	} else {
+		restOut = truncToWidth(rest, restCols)
+	}
+	return padToWidth(truncToWidth(name, nameCols), nameCols), restOut
+}
+
+// selMarker ist der Auswahlpfeil vor Listenzeilen. "▶" ist East-Asian-Ambiguous;
+// markerWidth liefert seine tatsächliche Breite, damit unmarkierte Zeilen genauso
+// weit eingerückt werden.
+const selMarker = "▶ "
+
+func markerWidth() int { return cellWidth(selMarker) }
+
+// markerPrefix liefert für die ausgewählte Zeile den Pfeil, sonst gleich breiten Leerraum.
+func markerPrefix(sel bool) string {
+	if sel {
+		return selMarker
+	}
+	return strings.Repeat(" ", markerWidth())
 }
 
 // --- Unterer Bereich ---
@@ -238,15 +363,20 @@ func (m model) renderIdleBottom() string {
 		more := len(m.filtered) > end
 
 		var lines []string
+		// Spalten in Terminalspalten ausrichten und auf m.width kürzen: renderBottom
+		// wird nicht umgebrochen, eine überlange Beschreibung bräche das Terminal
+		// selbst um – und bottomLines() läge eine Zeile daneben.
+		avail := m.width - 1 - markerWidth()
 		for i, cmd := range visible {
-			entry := fmt.Sprintf("%-18s", cmd.Name)
-			if cmd.Description != "" {
-				entry += "  " + acDescStyle.Render(cmd.Description)
+			name, desc := fitColumns(cmd.Name, 18, 8, cmd.Description, false, avail)
+			entry := name
+			if desc != "" {
+				entry += "  " + acDescStyle.Render(desc)
 			}
 			if start+i == m.acSel {
-				lines = append(lines, acItemSelectedStyle.Render(" ▶ "+entry))
+				lines = append(lines, acItemSelectedStyle.Render(" "+markerPrefix(true)+entry))
 			} else {
-				lines = append(lines, acItemStyle.Render("   "+entry))
+				lines = append(lines, acItemStyle.Render(" "+markerPrefix(false)+entry))
 			}
 		}
 		if more {
@@ -389,10 +519,38 @@ func (m model) renderDiscoverBottom() string {
 	return ""
 }
 
+// sectionHeading rendert eine Abschnittsüberschrift ("── TITEL ────"). Die
+// Zierlinie ist fest lang und wird bei schmalem Terminal ohne "…" abgeschnitten.
+func (m model) sectionHeading(title string) string {
+	return "  " + sectionStyle.Render(truncWithTail(title, m.width-2, "")) + "\n\n"
+}
+
+// discTitle ist der Kopf aller Discover-Schritte.
+func (m model) discTitle() string {
+	return "\n" + m.sectionHeading(L.DiscoveryTitle)
+}
+
+// discFoundLine meldet die Zahl der gefundenen Modelle. Sie wird auf m.width
+// umgebrochen: liefe sie über, bräche der Viewport sie selbst um, und die
+// Zeilenrechnung in discModelRows ginge nicht mehr auf.
+func (m model) discFoundLine() string {
+	found := wrapText(fmt.Sprintf(L.DiscoveryFoundFmt, len(m.discModels)), m.width, "  ")
+	return dimStyle.Render(found) + "\n\n"
+}
+
+// discModelRows ist die Zahl der Modellzeilen, die unter Titel und Fundzeile in
+// den Viewport passen.
+func (m model) discModelRows() int {
+	vis := m.viewport.Height - strings.Count(m.discTitle()+m.discFoundLine(), "\n")
+	if vis < 1 {
+		vis = 1
+	}
+	return vis
+}
+
 func (m model) renderDiscoverContent() string {
 	var sb strings.Builder
-	sb.WriteString("\n")
-	sb.WriteString("  " + sectionStyle.Render(L.DiscoveryTitle) + "\n\n")
+	sb.WriteString(m.discTitle())
 
 	switch m.discStep {
 	case discEnterHost:
@@ -407,41 +565,31 @@ func (m model) renderDiscoverContent() string {
 		sb.WriteString("  " + dimStyle.Render(L.DiscoveryScanPorts) + "\n")
 
 	case discPickModel:
-		sb.WriteString("  " + dimStyle.Render(fmt.Sprintf(L.DiscoveryFoundFmt, len(m.discModels))) + "\n\n")
-		const headerLines = 5
-		vis := m.viewport.Height - headerLines
-		if vis < 1 {
-			vis = 1
-		}
-		windowEnd := m.discModelOffset + vis
+		sb.WriteString(m.discFoundLine())
+		windowEnd := m.discModelOffset + m.discModelRows()
 		if windowEnd > len(m.discModels) {
 			windowEnd = len(m.discModels)
 		}
+		// Spaltenbudget der Zeile: Pfeil + Name + 2 (Separator) + Quelle. Die Quelle
+		// steht rechtsbündig und wird von links gekürzt – bei langen URLs trägt das
+		// Ende (Host:Port) die Information. Ist das Terminal zu schmal, wird zuerst
+		// der Name bis auf 8 Spalten gekürzt, dann die Quelle.
+		const maxSrcCols, minNameCols = 22, 8
+		avail := m.width - markerWidth()
 		for i := m.discModelOffset; i < windowEnd; i++ {
 			fm := m.discModels[i]
 			sel := i == m.modelSel
-			// Spaltenbudget der Zeile: 2 (Prefix "▶ "/"  ") + Name + 2 (Separator) + Quelle.
-			// Die Quelle von links kürzen – bei langen URLs trägt das Ende (Host:Port)
-			// die Information.
-			const maxSrcRunes = 22
-			source := fm.Source
-			if srcRunes := []rune(source); len(srcRunes) > maxSrcRunes {
-				source = "…" + string(srcRunes[len(srcRunes)-(maxSrcRunes-1):])
+			// nameCols = avail: fitColumns lässt dem Namen alles, was die Quelle nicht braucht.
+			name, source := fitColumns(fm.Name, avail, minNameCols,
+				truncLeftToWidth(fm.Source, maxSrcCols), true, avail)
+			line := name
+			if source != "" {
+				line += "  " + dimStyle.Render(source)
 			}
-			nameW := m.width - 4 - lipgloss.Width(source)
-			name := fm.Name
-			if nameW < 8 {
-				// Terminal zu schmal für saubere Spalten: hier NICHT auffüllen,
-				// sonst liefe die Zeile über m.width hinaus.
-				name = truncToWidth(name, 8)
-			} else {
-				name = padToWidth(truncToWidth(name, nameW), nameW)
-			}
-			line := name + "  " + dimStyle.Render(source)
 			if sel {
-				sb.WriteString(configLabelSelectedStyle.Render("▶ "+line) + "\n")
+				sb.WriteString(configLabelSelectedStyle.Render(markerPrefix(true)+line) + "\n")
 			} else {
-				sb.WriteString("  " + configLabelStyle.Render(line) + "\n")
+				sb.WriteString(markerPrefix(false) + configLabelStyle.Render(line) + "\n")
 			}
 		}
 
@@ -461,32 +609,40 @@ func (m model) renderConfigContent() string {
 	sb.WriteString("\n")
 
 	// LLM-PROFILE
-	sb.WriteString("  " + sectionStyle.Render(L.SectionProfiles) + "\n\n")
+	sb.WriteString(m.sectionHeading(L.SectionProfiles))
 	isProfileSec := m.cfgSection == 0
 	for i, p := range m.cfg.profiles {
 		sel := isProfileSec && m.profileSel == i && m.profileSubSel == -1
-		cursor := "  "
+		cursor := markerPrefix(false)
 		lblStyle := configLabelStyle
 		if sel {
-			cursor = configLabelSelectedStyle.Render("▶ ")
+			cursor = configLabelSelectedStyle.Render(markerPrefix(true))
 			lblStyle = configLabelSelectedStyle
 		}
-		urlShort := p.BaseURL
-		maxU := m.width - 36
-		if maxU < 10 {
-			maxU = 10
-		}
-		if len(urlShort) > maxU {
-			urlShort = urlShort[:maxU] + "…"
-		}
-		line := fmt.Sprintf("%-18s  %s", p.Name, dimStyle.Render(urlShort))
+		// Name auf 18 Spalten, dahinter die URL und die Marker. Gekürzt wird in
+		// Terminalspalten: Profilnamen dürfen Breitzeichen enthalten.
+		const profileNameCols, minNameCols = 18, 8
+		var suffix, suffixPlain string
 		if m.cfg.activeProfileIdx == i {
-			line += dimStyle.Render(" " + L.ProfileActive)
+			suffix += dimStyle.Render(" " + L.ProfileActive)
+			suffixPlain += " " + L.ProfileActive
 		}
 		if p.Preferred {
-			line += " " + preferredStyle.Render(L.ProfilePreferred)
+			suffix += " " + preferredStyle.Render(L.ProfilePreferred)
+			suffixPlain += " " + L.ProfilePreferred
 		}
-		sb.WriteString(cursor + lblStyle.Render(line) + "\n")
+		avail := m.width - markerWidth()
+		if avail-cellWidth(suffixPlain) < minNameCols {
+			suffix = "" // zu schmal: lieber die Marker opfern als den Namen
+		} else {
+			avail -= cellWidth(suffixPlain)
+		}
+		name, url := fitColumns(p.Name, profileNameCols, minNameCols, p.BaseURL, false, avail)
+		line := name
+		if url != "" {
+			line += "  " + dimStyle.Render(url)
+		}
+		sb.WriteString(cursor + lblStyle.Render(line+suffix) + "\n")
 
 		// Unterfelder (URL / Modell / API-Key) nur bei cfgSection==0 und ausgewähltem Profil
 		if isProfileSec && m.profileSel == i {
@@ -503,16 +659,16 @@ func (m model) renderConfigContent() string {
 	}
 	// "Add"-Button
 	addSel := isProfileSec && m.profileSel == len(m.cfg.profiles)
-	addCursor := "  "
+	addCursor := markerPrefix(false)
 	addStyle := configLabelStyle
 	if addSel {
-		addCursor = configLabelSelectedStyle.Render("▶ ")
+		addCursor = configLabelSelectedStyle.Render(markerPrefix(true))
 		addStyle = configLabelSelectedStyle
 	}
 	sb.WriteString(addCursor + addStyle.Render(L.ProfileAddBtn) + "\n\n")
 
 	// Einstellungen (nur in cfgSection==1 sichtbar)
-	sb.WriteString("  " + sectionStyle.Render(L.SectionAssistant) + "\n\n")
+	sb.WriteString(m.sectionHeading(L.SectionAssistant))
 
 	// Feld 0: Sprache (Toggle)
 	langDisplay := "Deutsch"
@@ -577,17 +733,19 @@ func (m model) renderConfigContent() string {
 	sb.WriteString("\n")
 
 	// Feld 6: System-Prompt
-	promptPreview := m.cfg.customPrompt
+	// Mehrzeiliger Prompt: Zeilenumbrüche zu Leerzeichen, sonst sprengt die
+	// Vorschau die einzeilige Konfigzeile.
+	promptPreview := strings.Join(strings.Fields(m.cfg.customPrompt), " ")
 	if promptPreview == "" {
 		promptPreview = L.FieldPromptEmpty
-	} else if len(promptPreview) > 40 {
-		promptPreview = promptPreview[:40] + "…"
+	} else {
+		promptPreview = truncToWidth(promptPreview, 40)
 	}
 	sb.WriteString(m.renderConfigField(6, L.FieldPrompt, promptPreview, false))
 	sb.WriteString("\n")
 
 	// TASTENKÜRZEL / SHORTCUTS
-	sb.WriteString("  " + sectionStyle.Render(L.SectionShortcuts) + "\n\n")
+	sb.WriteString(m.sectionHeading(L.SectionShortcuts))
 	for i := 0; i < 9; i++ {
 		val := m.cfg.shortcuts[i]
 		if val == "" {
@@ -606,39 +764,11 @@ func (m model) renderProfileSubField(label, value string, subIdx int, preStyled 
 	sel := m.profileSubSel == subIdx
 	editing := sel && m.configEditing
 
-	cursor := "    "
-	lblStyle := configLabelStyle
+	cursor := "  " + markerPrefix(false)
 	if sel {
-		cursor = "  " + configLabelSelectedStyle.Render("▶ ")
-		lblStyle = configLabelSelectedStyle
+		cursor = "  " + configLabelSelectedStyle.Render(markerPrefix(true))
 	}
-
-	if editing {
-		return cursor + lblStyle.Render(fmt.Sprintf("%-14s", label)) +
-			"  " + configEditingStyle.Render(L.ConfigEditingBelow) + "\n"
-	}
-
-	maxVal := m.width - 26
-	if maxVal < 10 {
-		maxVal = 10
-	}
-
-	var valRendered string
-	if preStyled {
-		valRendered = value
-	} else {
-		v := value
-		if len(v) > maxVal {
-			v = v[:maxVal] + "…"
-		}
-		if sel {
-			valRendered = configValueSelectedStyle.Render(v)
-		} else {
-			valRendered = configValueStyle.Render(v)
-		}
-	}
-
-	return cursor + lblStyle.Render(fmt.Sprintf("%-14s", label)) + "  " + valRendered + "\n"
+	return cursor + m.renderFieldBody(label, value, sel, editing, preStyled, 2+markerWidth())
 }
 
 // renderConfigField rendert eine Konfigurationszeile (nur für cfgSection==1).
@@ -647,37 +777,46 @@ func (m model) renderConfigField(idx int, label, value string, preStyled bool) s
 	sel := m.cfgSection == 1 && m.configSel == idx
 	editing := sel && m.configEditing
 
-	cursor := "  "
-	lblStyle := configLabelStyle
+	cursor := markerPrefix(false)
 	if sel {
-		cursor = configLabelSelectedStyle.Render("▶ ")
-		lblStyle = configLabelSelectedStyle
+		cursor = configLabelSelectedStyle.Render(markerPrefix(true))
 	}
+	return cursor + m.renderFieldBody(label, value, sel, editing, preStyled, markerWidth())
+}
+
+// configLabelCols ist die Breite der Label-Spalte im Konfigurationseditor.
+const configLabelCols = 14
+
+// renderFieldBody rendert Label und Wert einer Konfigzeile hinter einem Cursor
+// von indent Spalten. Das Label wird in Terminalspalten aufgefüllt (padToWidth),
+// nicht mit "%-14s": die Labels kommen aus i18n, und chinesische Labels belegen
+// je Zeichen zwei Spalten. Der Wert wird auf die Restbreite gekürzt.
+func (m model) renderFieldBody(label, value string, sel, editing, preStyled bool, indent int) string {
+	lblStyle := configLabelStyle
+	valStyle := configValueStyle
+	if sel {
+		lblStyle = configLabelSelectedStyle
+		valStyle = configValueSelectedStyle
+	}
+	// Ein Label, das breiter als die Spalte ist ("Sitzungen speichern"), belegt
+	// seine volle Breite; der Wert bekommt dann entsprechend weniger Platz.
+	label = truncToWidth(label, m.width-indent)
+	lbl := lblStyle.Render(padToWidth(label, configLabelCols))
 
 	if editing {
-		return cursor + lblStyle.Render(fmt.Sprintf("%-14s", label)) +
-			"  " + configEditingStyle.Render(L.ConfigEditingBelow) + "\n"
+		return lbl + "  " + configEditingStyle.Render(L.ConfigEditingBelow) + "\n"
 	}
 
-	maxVal := m.width - 22
-	if maxVal < 10 {
-		maxVal = 10
+	valW := m.width - indent - maxInt(cellWidth(label), configLabelCols) - 2
+	if valW < 1 {
+		return lbl + "\n"
 	}
-
 	var valRendered string
 	if preStyled {
-		valRendered = value
+		// Bereits gestylt: ANSI-fest kürzen, statt die Escape-Sequenzen zu zerschneiden.
+		valRendered = ansi.Truncate(value, valW, ellipsis)
 	} else {
-		v := value
-		if len(v) > maxVal {
-			v = v[:maxVal] + "…"
-		}
-		if sel {
-			valRendered = configValueSelectedStyle.Render(v)
-		} else {
-			valRendered = configValueStyle.Render(v)
-		}
+		valRendered = valStyle.Render(truncToWidth(value, valW))
 	}
-
-	return cursor + lblStyle.Render(fmt.Sprintf("%-14s", label)) + "  " + valRendered + "\n"
+	return lbl + "  " + valRendered + "\n"
 }
