@@ -197,6 +197,7 @@ type UIStrings struct {
 	HealthFailFmt    string
 	HealthSuggestFmt string
 	HealthNoFallback string
+	ModelSwitchedFmt string // from, baseURL, to
 
 	// Slash-Befehlsbeschreibungen
 	CmdInstallDesc    string
@@ -320,6 +321,7 @@ var de = UIStrings{
 	HealthFailFmt:    "⚠ LLM-Profil '%s' ist nicht erreichbar",
 	HealthSuggestFmt: "  → Nächste Option: '%s'  (in /config wechseln)",
 	HealthNoFallback: "  → Kein weiteres erreichbares Profil. Bitte /config prüfen.",
+	ModelSwitchedFmt: "⚠ Modell '%s' wird von %s nicht (mehr) angeboten – automatisch auf das verfügbare Modell '%s' gewechselt. Die Konfiguration wurde angepasst.",
 
 	FieldActiveProfile: "Aktives Profil",
 	FieldEndpoint:      "LLM-Endpunkt",
@@ -578,6 +580,7 @@ var en = UIStrings{
 	HealthFailFmt:    "⚠ LLM profile '%s' is not reachable",
 	HealthSuggestFmt: "  → Next option: '%s'  (switch in /config)",
 	HealthNoFallback: "  → No other reachable profile available. Check /config.",
+	ModelSwitchedFmt: "⚠ Model '%s' is no longer offered by %s – switched automatically to the available model '%s'. The configuration has been updated.",
 
 	FieldActiveProfile: "Active profile",
 	FieldEndpoint:      "LLM Endpoint",
@@ -834,6 +837,7 @@ var zh = UIStrings{
 	HealthFailFmt:    "⚠ LLM 配置文件 '%s' 无法访问",
 	HealthSuggestFmt: "  → 下一个选项：'%s'  （在 /config 中切换）",
 	HealthNoFallback: "  → 没有其他可访问的配置文件。请检查 /config。",
+	ModelSwitchedFmt: "⚠ %[2]s 不再提供模型 '%[1]s' – 已自动切换到可用模型 '%[3]s'。配置已相应更新。",
 
 	FieldActiveProfile: "当前配置文件",
 	FieldEndpoint:      "LLM 端点",

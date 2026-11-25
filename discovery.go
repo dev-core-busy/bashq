@@ -31,6 +31,9 @@ type healthCheckMsg struct {
 	ok          bool
 	profileName string
 	suggested   string // nächstes erreichbares Profil (leer = keines)
+	profileIdx  int    // geprüftes Profil
+	modelFrom   string // konfiguriertes Modell, das der Host nicht (mehr) anbietet
+	modelTo     string // verfügbares Ersatzmodell (leer = kein Wechsel nötig)
 }
 
 // discoverFromInput ist der smarte Einstiegspunkt für Discovery.
@@ -400,4 +403,71 @@ func healthCheck(baseURL string) error {
 		return fmt.Errorf("HTTP %d", resp.StatusCode)
 	}
 	return nil
+}
+
+// listModels fragt die Modellliste eines OpenAI-kompatiblen Endpunkts ab.
+func listModels(baseURL, apiKey string) []string {
+	client := &http.Client{Timeout: 5 * time.Second}
+	models, _ := fetchOpenAIModelsAuth(client, strings.TrimRight(baseURL, "/"), apiKey)
+	return models
+}
+
+// normModelName vereinheitlicht Modellnamen für den Vergleich:
+// Groß-/Kleinschreibung egal, Ollamas implizites ":latest" ebenso.
+func normModelName(s string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	return strings.TrimSuffix(s, ":latest")
+}
+
+// modelBase liefert den Kern eines Modellnamens ohne Anbieterpfad
+// ("Qwen/Qwen3-8B" → "qwen3-8b", "models/gemini-pro" → "gemini-pro").
+func modelBase(s string) string {
+	s = normModelName(s)
+	if i := strings.LastIndex(s, "/"); i >= 0 {
+		s = s[i+1:]
+	}
+	return s
+}
+
+// isChatModel sortiert Modelle aus, die keine Chat-Completions können.
+func isChatModel(name string) bool {
+	n := strings.ToLower(name)
+	for _, bad := range []string{"embed", "rerank", "whisper", "tts", "moderation", "dall-e"} {
+		if strings.Contains(n, bad) {
+			return false
+		}
+	}
+	return true
+}
+
+// pickReplacementModel wählt ein Ersatzmodell, wenn wanted nicht unter
+// available ist. Liefert "" wenn wanted verfügbar ist oder es keinen Ersatz gibt.
+// Bevorzugt wird das Modell mit dem längsten gemeinsamen Namensanfang
+// (gleiche Modellfamilie, z.B. qwen3:8b → qwen3:14b), sonst das erste.
+func pickReplacementModel(wanted string, available []string) string {
+	if len(available) == 0 {
+		return ""
+	}
+	w := normModelName(wanted)
+	for _, a := range available {
+		if normModelName(a) == w {
+			return ""
+		}
+	}
+	wb := []rune(modelBase(wanted))
+	best, bestScore := "", -1
+	for _, a := range available {
+		if !isChatModel(a) {
+			continue
+		}
+		ab := []rune(modelBase(a))
+		score := 0
+		for score < len(wb) && score < len(ab) && wb[score] == ab[score] {
+			score++
+		}
+		if score > bestScore {
+			best, bestScore = a, score
+		}
+	}
+	return best
 }

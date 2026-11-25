@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"regexp"
 	"strings"
@@ -60,9 +62,41 @@ type chatResponse struct {
 		Message      Message `json:"message"`
 		FinishReason string  `json:"finish_reason"`
 	} `json:"choices"`
-	Error *struct {
+	// Error ist je nach Server ein Objekt ({"message": …}) oder ein String.
+	Error json.RawMessage `json:"error,omitempty"`
+}
+
+// apiError ist ein Fehler, den der LLM-Server selbst gemeldet hat (HTTP-Status
+// oder error-Feld) – im Gegensatz zu Verbindungs- oder Parse-Fehlern.
+type apiError struct {
+	status int
+	msg    string
+}
+
+func (e *apiError) Error() string { return "LLM-Fehler: " + e.msg }
+
+// parseErrorField liest das error-Feld als Objekt oder String.
+func parseErrorField(raw json.RawMessage) string {
+	if len(raw) == 0 || string(raw) == "null" {
+		return ""
+	}
+	var obj struct {
 		Message string `json:"message"`
-	} `json:"error,omitempty"`
+	}
+	if json.Unmarshal(raw, &obj) == nil && obj.Message != "" {
+		return obj.Message
+	}
+	var str string
+	if json.Unmarshal(raw, &str) == nil {
+		return str
+	}
+	return string(raw)
+}
+
+// ModelSwitch beschreibt einen automatischen Modellwechsel: Das konfigurierte
+// Modell gab es auf dem Host nicht mehr, ein verfügbares wurde übernommen.
+type ModelSwitch struct {
+	From, To, BaseURL string
 }
 
 // ToolCallRequest ist eine aufgelöste Tool-Anfrage
@@ -74,8 +108,9 @@ type ToolCallRequest struct {
 
 // AgentResponse ist die aufgelöste Antwort des LLM
 type AgentResponse struct {
-	Text      string
-	ToolCalls []ToolCallRequest
+	Text        string
+	ToolCalls   []ToolCallRequest
+	ModelSwitch *ModelSwitch // gesetzt, wenn callLLM das Modell gewechselt hat
 }
 
 // availableTools wird über rebuildTools() aus L.* befüllt.
@@ -169,7 +204,42 @@ func (a *Agent) Reset() {
 	}
 }
 
+// callLLM schickt die History ans LLM. Meldet der Server einen Fehler und
+// bietet er das konfigurierte Modell nicht (mehr) an – etwa weil auf dem Host
+// ein anderes Modell geladen wurde –, wird einmal mit einem verfügbaren Modell
+// wiederholt. Klappt das, steht der Wechsel in AgentResponse.ModelSwitch.
 func (a *Agent) callLLM(ctx context.Context) (*AgentResponse, error) {
+	resp, err := a.callLLMOnce(ctx)
+	if err == nil {
+		return resp, nil
+	}
+	var ae *apiError
+	if !errors.As(err, &ae) || ctx.Err() != nil {
+		return nil, err
+	}
+	switch ae.status {
+	case 401, 403, 429: // Auth- bzw. Rate-Limit-Problem, kein Modellproblem
+		return nil, err
+	}
+	if ae.status >= 500 && !strings.Contains(strings.ToLower(ae.msg), "model") {
+		return nil, err
+	}
+	replacement := pickReplacementModel(a.model, listModels(a.baseURL, a.apiKey))
+	if replacement == "" {
+		return nil, err
+	}
+	old := a.model
+	a.model = replacement
+	resp, err2 := a.callLLMOnce(ctx)
+	if err2 != nil {
+		a.model = old // Ersatz hilft auch nicht – ursprünglichen Fehler melden
+		return nil, err
+	}
+	resp.ModelSwitch = &ModelSwitch{From: old, To: replacement, BaseURL: a.baseURL}
+	return resp, nil
+}
+
+func (a *Agent) callLLMOnce(ctx context.Context) (*AgentResponse, error) {
 	// System-Prompt dynamisch aufbauen (customPrompt voranstellen wenn gesetzt)
 	msgs := make([]Message, len(a.history))
 	copy(msgs, a.history)
@@ -207,13 +277,28 @@ func (a *Agent) callLLM(ctx context.Context) (*AgentResponse, error) {
 	}
 	defer resp.Body.Close()
 
-	var chatResp chatResponse
-	if err := json.NewDecoder(resp.Body).Decode(&chatResp); err != nil {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return nil, fmt.Errorf("Antwort-Fehler: %w", err)
 	}
 
-	if chatResp.Error != nil {
-		return nil, fmt.Errorf("LLM-Fehler: %s", chatResp.Error.Message)
+	var chatResp chatResponse
+	decodeErr := json.Unmarshal(body, &chatResp)
+	if msg := parseErrorField(chatResp.Error); msg != "" {
+		return nil, &apiError{status: resp.StatusCode, msg: msg}
+	}
+	if resp.StatusCode >= 400 {
+		msg := strings.TrimSpace(string(body))
+		if r := []rune(msg); len(r) > 200 { // runenweise, nie UTF-8 zerschneiden
+			msg = string(r[:200])
+		}
+		if msg == "" {
+			msg = fmt.Sprintf("HTTP %d", resp.StatusCode)
+		}
+		return nil, &apiError{status: resp.StatusCode, msg: msg}
+	}
+	if decodeErr != nil {
+		return nil, fmt.Errorf("Antwort-Fehler: %w", decodeErr)
 	}
 
 	if len(chatResp.Choices) == 0 {

@@ -70,7 +70,8 @@ type commandResultMsg struct {
 	cancelled bool
 }
 type compactDoneMsg struct {
-	msgCount int
+	msgCount    int
+	modelSwitch *ModelSwitch
 }
 type errMsg struct{ err error }
 type spinTickMsg struct{}
